@@ -1,0 +1,7 @@
+<launch>
+
+  <!-- start up empty world with pr2-->
+  <include file="$(find pr2_gazebo)/pr2_empty_world.launch"/>
+  <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-urdf -file $(find pr2_feeder)/objects/file.urdf -model table  -x 2.0 -y 0.05 -z 0.65" respawn="false" output="screen" />
+</launch>
+
