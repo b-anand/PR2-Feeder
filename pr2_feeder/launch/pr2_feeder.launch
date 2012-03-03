@@ -5,19 +5,18 @@
 
   <include file="$(find pr2_teleop)/teleop_keyboard.launch"/>
 
-  <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-urdf -file $(find pr2_feeder)/objects/table.urdf -model table  -x 1.0 -y 0.4 -z 0.3" respawn="false" output="screen" />
+  <param name="coke_can_description" textfile="$(find gazebo_worlds)/objects/coke_can.urdf" />
 
-  <node name="spawn_coke_can" pkg="gazebo" type="spawn_model" args="-urdf -file $(find gazebo_worlds)/objects/coke_can.urdf -model coke_can  -x 1.2 -z 0.75" respawn="false" output="screen" />
+
+  <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-gazebo -file $(find gazebo_worlds)/objects/desk4.model -model table  -x 3.0 -y 0.5 -z 0.3" respawn="false" output="screen" />
+
+  <node name="spawn_coke_can" pkg="gazebo" type="spawn_model" args="-urdf -param coke_can_description -model coke_can  -x 2.9 -y 0.5 -z 0.75" respawn="false" output="screen" />
 
   <!-- Start the manipulation pipeline. The database parameters have been set to localhost -->
   <include file="$(find pr2_feeder)/launch/pr2_tabletop_manipulation_pipeline.launch"/>
 
-  <!-- Tuck Arms For Navigation -->
-  <node name="tuckarm" pkg="pr2_tuckarm" type="tuck_arms.py" args="-l t -r t" />
-
-  <!-- for visualization 
+  <!-- for visualization -->
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find pr2_feeder)/rviz/config_with_markers.vcg"/>
-  -->
 
 </launch>
 

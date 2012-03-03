@@ -1,0 +1,3 @@
+Once the robot is up and running, if coke can gets spawned before the desk, then delete it and respawn it manually.
+
+Also, move the robot to the right position using the pr2_teleop_general package.
