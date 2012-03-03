@@ -74,7 +74,7 @@ int main(int argc, char **argv)
   tabletop_object_detector::TabletopDetection detection_call;
   //we want recognized database objects returned
   //set this to false if you are using the pipeline without the database
-  detection_call.request.return_clusters = true;
+  detection_call.request.return_clusters = false;
   //we want the individual object point clouds returned as well
   detection_call.request.return_models = true;
   detection_call.request.num_models = 1;
