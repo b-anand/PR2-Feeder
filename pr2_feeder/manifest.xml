@@ -9,6 +9,11 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/pr2_feeder</url>
 
+  <depend package="actionlib"/>
+  <depend package="object_manipulation_msgs"/>
+  <depend package="tabletop_object_detector"/>
+  <depend package="tabletop_collision_map_processing"/>
+
 </package>
 
 

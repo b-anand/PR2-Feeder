@@ -7,6 +7,16 @@
 
   <node name="spawn_coke_can" pkg="gazebo" type="spawn_model" args="-urdf -file $(find gazebo_worlds)/objects/coke_can.urdf -model coke_can  -x 1.2 -z 0.75" respawn="false" output="screen" />
 
+  <!-- Start the manipulation pipeline. The database parameters have been set to localhost -->
+  <include file="$(find pr2_feeder)/launch/pr2_tabletop_manipulation_pipeline.launch"/>
+
+  <!-- Tuck Arms For Navigation -->
+  <node name="tuckarm" pkg="pr2_tuckarm" type="tuck_arms.py" args="-l t -r t" />
+
+  <!-- for visualization 
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find pr2_feeder)/rviz/config_with_markers.vcg"/>
+  -->
+
 </launch>
 
 
