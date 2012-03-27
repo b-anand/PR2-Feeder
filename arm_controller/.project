@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>arm_controller</name>
+	<name>arm_controller-RelWithDebInfo@arm_controller</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -84,7 +84,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.environment</key>
-					<value>VERBOSE=1|ROS_ROOT=/opt/ros/electric/ros|ROS_PACKAGE_PATH=/home/ab2283/workspace:/home/ab2283/ros:/opt/ros/electric/stacks|PYTHONPATH=/opt/ros/electric/ros/core/roslib/src::/opt/ros/electric/ros/core/roslib/src:/opt/ros/electric/ros/core/roslib/src|PATH=/opt/ros/electric/ros/bin:/opt/ros/electric/ros/bin:/opt/ros/electric/ros/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/opt/NokiaQtSDK/Maemo/4.6.2/bin/:/opt/NokiaQtSDK/QtCreator/bin/|</value>
+					<value>VERBOSE=1|ROS_ROOT=/opt/ros/electric/ros|ROS_PACKAGE_PATH=/home/ab2283/workspace/git/PR2-Feeder:/home/ab2283/ros:/opt/ros/electric/stacks|PYTHONPATH=/opt/ros/electric/ros/core/roslib/src::/opt/ros/electric/ros/core/roslib/src:/opt/ros/electric/ros/core/roslib/src|PATH=/opt/ros/electric/ros/bin:/opt/ros/electric/ros/bin:/opt/ros/electric/ros/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/opt/NokiaQtSDK/Maemo/4.6.2/bin/:/opt/NokiaQtSDK/QtCreator/bin/|</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.fullBuildTarget</key>

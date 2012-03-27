@@ -1,27 +1,12 @@
 <launch>
-
-  <node name="rxconsole" pkg="rxtools" type="rxconsole" respawn="false" output="screen" />
-
-  <env name="ROBOT_INITIAL_POSE" value="-J head_tilt_joint 0.2 -J head_pan_joint 0.5" />
-
   <!-- start up empty world with pr2-->
   <include file="$(find pr2_gazebo)/pr2_empty_world.launch"/>
+  <include file="$(find pr2_feeder)/launch/spawn_table_cup.launch"/>
+  <include file="$(find pr2_feeder)/launch/rviz.launch"/>
+  <include file="$(find pr2_feeder)/launch/rxconsole.launch"/>
 
-  <include file="$(find pr2_teleop)/teleop_keyboard.launch"/>
-
-  <param name="desk_description" textfile="$(find gazebo_worlds)/objects/desk3.model" />
-  <param name="coke_can_description" textfile="$(find gazebo_worlds)/objects/coke_can.urdf" />
-
-  <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-gazebo -param desk_description -model table  -x 1 -y 0.2 -z 0.01" respawn="false" output="screen" />
-
-  <node name="spawn_coke_can" pkg="gazebo" type="spawn_model" args="-urdf -param coke_can_description -model coke_can  -x 0.8 -y 0.02 -z 0.55" respawn="false" output="screen" />
-
-  <!-- Start the manipulation pipeline. The database parameters have been set to localhost -->
+  <!-- Start the manipulation pipeline. The database parameters need to be set inside the launch file. -->
   <include file="$(find pr2_feeder)/launch/pr2_tabletop_manipulation_pipeline.launch"/>
-
-  <!-- for visualization -->
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find pr2_feeder)/rviz/config_with_markers.vcg"/>
-
 </launch>
 
 

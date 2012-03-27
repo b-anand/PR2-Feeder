@@ -1,9 +1,0 @@
-<launch>
-  <param name="desk_description" textfile="$(find gazebo_worlds)/objects/table.urdf.xacro" />
-  <param name="coke_can_description" textfile="$(find gazebo_worlds)/objects/coke_can.urdf" />
-
-  <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-urdf -param desk_description -model table  -x 3.0 -y 0.5 -z 0.3" respawn="false" output="screen" />
-
-  <node name="spawn_coke_can" pkg="gazebo" type="spawn_model" args="-urdf -param coke_can_description -model coke_can  -x 3.0 -y 0.5 -z 1.5" respawn="false" output="screen" />
-
-</launch>

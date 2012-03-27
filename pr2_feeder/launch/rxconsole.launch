@@ -1,0 +1,4 @@
+<launch>
+  <node name="rxconsole" pkg="rxtools" type="rxconsole" respawn="false" output="screen" />
+</launch>
+
