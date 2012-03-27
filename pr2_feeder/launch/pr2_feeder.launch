@@ -2,6 +2,8 @@
 
   <node name="rxconsole" pkg="rxtools" type="rxconsole" respawn="false" output="screen" />
 
+  <env name="ROBOT_INITIAL_POSE" value="-J head_tilt_joint 0.2 -J head_pan_joint 0.5" />
+
   <!-- start up empty world with pr2-->
   <include file="$(find pr2_gazebo)/pr2_empty_world.launch"/>
 
@@ -10,9 +12,9 @@
   <param name="desk_description" textfile="$(find gazebo_worlds)/objects/desk3.model" />
   <param name="coke_can_description" textfile="$(find gazebo_worlds)/objects/coke_can.urdf" />
 
-  <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-gazebo -param desk_description -model table  -x 1.4 -y 0.2 -z 0.01" respawn="false" output="screen" />
+  <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-gazebo -param desk_description -model table  -x 1 -y 0.2 -z 0.01" respawn="false" output="screen" />
 
-  <node name="spawn_coke_can" pkg="gazebo" type="spawn_model" args="-urdf -param coke_can_description -model coke_can  -x 1.2 -y 0.02 -z 0.55" respawn="false" output="screen" />
+  <node name="spawn_coke_can" pkg="gazebo" type="spawn_model" args="-urdf -param coke_can_description -model coke_can  -x 0.8 -y 0.02 -z 0.55" respawn="false" output="screen" />
 
   <!-- Start the manipulation pipeline. The database parameters have been set to localhost -->
   <include file="$(find pr2_feeder)/launch/pr2_tabletop_manipulation_pipeline.launch"/>

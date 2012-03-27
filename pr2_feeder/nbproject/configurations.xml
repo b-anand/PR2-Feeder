@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="80">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <logicalFolder name="Modules"
+                   displayName="Modules"
+                   projectFiles="true"
+                   root="/usr/share/cmake-2.8/Modules">
+      <itemPath>/usr/share/cmake-2.8/Modules/CMakeCCompilerABI.c</itemPath>
+      <itemPath>/usr/share/cmake-2.8/Modules/CMakeCXXCompilerABI.cpp</itemPath>
+      <itemPath>/usr/share/cmake-2.8/Modules/CMakeCompilerABI.h</itemPath>
+    </logicalFolder>
+    <df name="pr2_feeder" root=".">
+      <df name="bin">
+      </df>
+      <df name="build">
+        <df name="CMakeFiles">
+          <df name="clean-test-results.dir">
+          </df>
+          <df name="clean-test-results.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>progress.make</in>
+          </df>
+          <df name="CMakeTmp">
+            <df name="CMakeFiles">
+              <df name="cmTryCompileExec.dir">
+              </df>
+            </df>
+          </df>
+          <df name="CMakeTmp">
+            <df name="CMakeFiles">
+              <df name="cmTryCompileExec.dir">
+              </df>
+            </df>
+          </df>
+          <df name="CompilerIdC">
+          </df>
+          <df name="CompilerIdC">
+            <in>CMakeCCompilerId.c</in>
+            <in>a.out</in>
+          </df>
+          <df name="CompilerIdCXX">
+          </df>
+          <df name="CompilerIdCXX">
+            <in>CMakeCXXCompilerId.cpp</in>
+            <in>a.out</in>
+          </df>
+          <df name="pickup_and_place_cup_demo.dir">
+            <df name="src">
+            </df>
+          </df>
+          <df name="pickup_and_place_cup_demo.dir">
+            <df name="src">
+            </df>
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>depend.make</in>
+            <in>flags.make</in>
+            <in>link.txt</in>
+            <in>progress.make</in>
+          </df>
+          <df name="ROSBUILD_genmsg_cpp.dir">
+          </df>
+          <df name="ROSBUILD_genmsg_cpp.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+          </df>
+          <df name="ROSBUILD_genmsg_lisp.dir">
+          </df>
+          <df name="ROSBUILD_genmsg_lisp.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+          </df>
+          <df name="ROSBUILD_gensrv_cpp.dir">
+          </df>
+          <df name="ROSBUILD_gensrv_cpp.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>progress.make</in>
+          </df>
+          <df name="ROSBUILD_gensrv_lisp.dir">
+          </df>
+          <df name="ROSBUILD_gensrv_lisp.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>progress.make</in>
+          </df>
+          <df name="rosbuild_precompile.dir">
+          </df>
+          <df name="rosbuild_precompile.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>depend.internal</in>
+            <in>depend.make</in>
+            <in>progress.make</in>
+          </df>
+          <df name="rosbuild_premsgsrvgen.dir">
+          </df>
+          <df name="rosbuild_premsgsrvgen.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>progress.make</in>
+          </df>
+          <df name="rospack_genmsg.dir">
+          </df>
+          <df name="rospack_genmsg.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>progress.make</in>
+          </df>
+          <df name="rospack_genmsg_libexe.dir">
+          </df>
+          <df name="rospack_genmsg_libexe.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>depend.internal</in>
+            <in>depend.make</in>
+            <in>progress.make</in>
+          </df>
+          <df name="rospack_gensrv.dir">
+          </df>
+          <df name="rospack_gensrv.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>progress.make</in>
+          </df>
+          <df name="test-future.dir">
+          </df>
+          <df name="test-future.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>progress.make</in>
+          </df>
+          <df name="test-results-run.dir">
+          </df>
+          <df name="test-results-run.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>progress.make</in>
+          </df>
+          <df name="test-results.dir">
+          </df>
+          <df name="test-results.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>progress.make</in>
+          </df>
+          <df name="test.dir">
+          </df>
+          <df name="test.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>progress.make</in>
+          </df>
+          <df name="tests.dir">
+          </df>
+          <df name="tests.dir">
+            <in>DependInfo.cmake</in>
+            <in>build.make</in>
+            <in>cmake_clean.cmake</in>
+            <in>progress.make</in>
+          </df>
+        </df>
+        <df name="CMakeFiles">
+          <df name="clean-test-results.dir">
+          </df>
+          <df name="CMakeTmp">
+            <df name="CMakeFiles">
+              <df name="cmTryCompileExec.dir">
+              </df>
+            </df>
+          </df>
+          <df name="CompilerIdC">
+          </df>
+          <df name="CompilerIdCXX">
+          </df>
+          <df name="pickup_and_place_cup_demo.dir">
+            <df name="src">
+            </df>
+          </df>
+          <df name="ROSBUILD_genmsg_cpp.dir">
+          </df>
+          <df name="ROSBUILD_genmsg_lisp.dir">
+          </df>
+          <df name="ROSBUILD_gensrv_cpp.dir">
+          </df>
+          <df name="ROSBUILD_gensrv_lisp.dir">
+          </df>
+          <df name="rosbuild_precompile.dir">
+          </df>
+          <df name="rosbuild_premsgsrvgen.dir">
+          </df>
+          <df name="rospack_genmsg.dir">
+          </df>
+          <df name="rospack_genmsg_libexe.dir">
+          </df>
+          <df name="rospack_gensrv.dir">
+          </df>
+          <df name="test-future.dir">
+          </df>
+          <df name="test-results-run.dir">
+          </df>
+          <df name="test-results.dir">
+          </df>
+          <df name="test.dir">
+          </df>
+          <df name="tests.dir">
+          </df>
+        </df>
+      </df>
+      <df name="build">
+        <df name="CMakeFiles">
+          <df name="clean-test-results.dir">
+          </df>
+          <df name="CMakeTmp">
+            <df name="CMakeFiles">
+              <df name="cmTryCompileExec.dir">
+              </df>
+            </df>
+          </df>
+          <df name="CompilerIdC">
+          </df>
+          <df name="CompilerIdCXX">
+          </df>
+          <df name="pickup_and_place_cup_demo.dir">
+            <df name="src">
+            </df>
+          </df>
+          <df name="ROSBUILD_genmsg_cpp.dir">
+          </df>
+          <df name="ROSBUILD_genmsg_lisp.dir">
+          </df>
+          <df name="ROSBUILD_gensrv_cpp.dir">
+          </df>
+          <df name="ROSBUILD_gensrv_lisp.dir">
+          </df>
+          <df name="rosbuild_precompile.dir">
+          </df>
+          <df name="rosbuild_premsgsrvgen.dir">
+          </df>
+          <df name="rospack_genmsg.dir">
+          </df>
+          <df name="rospack_genmsg_libexe.dir">
+          </df>
+          <df name="rospack_gensrv.dir">
+          </df>
+          <df name="test-future.dir">
+          </df>
+          <df name="test-results-run.dir">
+          </df>
+          <df name="test-results.dir">
+          </df>
+          <df name="test.dir">
+          </df>
+          <df name="tests.dir">
+          </df>
+        </df>
+      </df>
+      <df name="launch">
+      </df>
+      <df name="models">
+      </df>
+      <df name="objects">
+      </df>
+      <df name="rviz">
+      </df>
+      <df name="src">
+        <in>pickup_and_place_demo.cpp</in>
+      </df>
+    </df>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceFolderFilter>^(nbproject)$</sourceFolderFilter>
+  <sourceRootList>
+    <Elem>.</Elem>
+  </sourceRootList>
+  <projectmakefile>Makefile</projectmakefile>
+  <confs>
+    <conf name="Default" type="0">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>default</compilerSet>
+      </toolsSet>
+      <makefileType>
+        <makeTool>
+          <buildCommandWorkingDir>.</buildCommandWorkingDir>
+          <buildCommand>${MAKE} -f Makefile</buildCommand>
+          <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
+          <executablePath></executablePath>
+        </makeTool>
+      </makefileType>
+      <folder path="Modules">
+        <cTool>
+          <incDir>
+            <pElem>build/CMakeFiles/CMakeTmp</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>build/CMakeFiles/CMakeTmp</pElem>
+          </incDir>
+        </ccTool>
+      </folder>
+      <folder path="pr2_feeder/src">
+        <ccTool>
+          <incDir>
+            <pElem>/opt/ros/electric/stacks/arm_navigation_experimental/distance_field/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/tools/rosconsole/include</pElem>
+            <pElem>/opt/ros/electric/ros/tools/rospack/include</pElem>
+            <pElem>/opt/ros/electric/stacks/pluginlib</pElem>
+            <pElem>/opt/ros/electric/stacks/nodelet_core/nodelet/srv_gen/cpp/include</pElem>
+            <pElem>/usr/lib/openmpi/include/openmpi</pElem>
+            <pElem>/opt/ros/electric/ros/core/roslib/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/bond_core/smclib/include</pElem>
+            <pElem>/usr/lib/openmpi/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/messages/rosgraph_msgs/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/pr2_object_manipulation/perception/tabletop_collision_map_processing/include</pElem>
+            <pElem>/usr/include/freetype2</pElem>
+            <pElem>/opt/ros/electric/stacks/pr2_common/pr2_msgs/srv_gen/cpp/include</pElem>
+            <pElem>/usr/include/vtk-5.2</pElem>
+            <pElem>/opt/ros/electric/stacks/arm_navigation/arm_navigation_msgs/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/ros/tools/rospack</pElem>
+            <pElem>/opt/ros/electric/stacks/common_msgs/trajectory_msgs/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/object_manipulation/object_manipulation_msgs/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/tools/rosbag/include</pElem>
+            <pElem>/opt/ros/electric/stacks/bond_core/bond/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp/srv_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/messages/std_srvs/srv_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/geometry/tf/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/utilities/cpp_common/include</pElem>
+            <pElem>/usr/include/libxml2</pElem>
+            <pElem>/opt/ros/electric/stacks/object_manipulation/household_objects_database_msgs/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/geometry/tf/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp_traits/include</pElem>
+            <pElem>/opt/ros/electric/stacks/common_msgs/sensor_msgs/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/pr2_object_manipulation/perception/tabletop_object_detector/msg_gen/cpp/include</pElem>
+            <pElem>include</pElem>
+            <pElem>/opt/ros/electric/stacks/pr2_object_manipulation/perception/tabletop_object_detector/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/driver_common/dynamic_reconfigure/srv/cpp</pElem>
+            <pElem>/opt/ros/electric/stacks/driver_common/dynamic_reconfigure/srv_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/pluginlib/include</pElem>
+            <pElem>/opt/ros/electric/stacks/perception_pcl/pcl_ros/cfg/cpp</pElem>
+            <pElem>/opt/ros/electric/stacks/object_manipulation/household_objects_database_msgs/srv_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/utilities/xmlrpcpp/src</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/utilities/rostime/include</pElem>
+            <pElem>/opt/ros/electric/stacks/common_msgs/geometry_msgs/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/geometry/tf/srv_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/driver_common/dynamic_reconfigure/include</pElem>
+            <pElem>/opt/ros/electric/stacks/driver_common/dynamic_reconfigure/msg/cpp</pElem>
+            <pElem>/opt/ros/electric/stacks/driver_common/dynamic_reconfigure/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp/include</pElem>
+            <pElem>/usr/include/tcl8.5</pElem>
+            <pElem>/usr/include/python2.6</pElem>
+            <pElem>/opt/ros/electric/stacks/pr2_common/pr2_msgs/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/arm_navigation/arm_navigation_msgs/srv_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/tools/topic_tools/srv_gen/cpp/include</pElem>
+            <pElem>/usr/lib/jvm/default-java/include</pElem>
+            <pElem>/opt/ros/electric/stacks/object_manipulation/object_manipulation_msgs/srv_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/object_manipulation/object_manipulation_msgs/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/utilities/message_filters/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/tools/rostest/include</pElem>
+            <pElem>build</pElem>
+            <pElem>/opt/ros/electric/stacks/common_msgs/actionlib_msgs/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/nodelet_core/nodelet/include</pElem>
+            <pElem>/opt/ros/electric/stacks/common_msgs/sensor_msgs/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp_serialization/include</pElem>
+            <pElem>/opt/ros/electric/stacks/pr2_object_manipulation/perception/tabletop_object_detector/msg_gen/cpp</pElem>
+            <pElem>/opt/ros/electric/stacks/arm_navigation/arm_navigation_msgs/include</pElem>
+            <pElem>/opt/ros/electric/stacks/pr2_object_manipulation/perception/tabletop_object_detector/srv_gen/cpp</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/messages/std_msgs/include</pElem>
+            <pElem>/opt/ros/electric/stacks/common_msgs/visualization_msgs/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/geometry/angles/include</pElem>
+            <pElem>/opt/ros/electric/stacks/pr2_object_manipulation/perception/tabletop_object_detector/srv_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/bullet/include</pElem>
+            <pElem>/opt/ros/electric/stacks/perception_pcl/pcl/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/bond_core/bondcpp/include</pElem>
+            <pElem>/opt/ros/electric/ros/core/roslib/include</pElem>
+            <pElem>/opt/ros/electric/stacks/nodelet_core/nodelet_topic_tools/include</pElem>
+            <pElem>/opt/ros/electric/stacks/ros_comm/tools/topic_tools/include</pElem>
+            <pElem>/opt/ros/electric/stacks/perception_pcl/pcl/include/pcl-1.1</pElem>
+            <pElem>/opt/ros/electric/stacks/common/actionlib/msg_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/pr2_object_manipulation/perception/tabletop_collision_map_processing/srv_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/common/actionlib/include</pElem>
+            <pElem>/opt/ros/electric/stacks/common_msgs/sensor_msgs/srv_gen/cpp/include</pElem>
+            <pElem>/opt/ros/electric/stacks/perception_pcl/flann/include</pElem>
+            <pElem>/opt/ros/electric/stacks/perception_pcl/pcl_ros/include</pElem>
+            <pElem>/opt/ros/electric/stacks/perception_pcl/cminpack/include</pElem>
+            <pElem>/usr/include/eigen3</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>BT_EULER_DEFAULT_ZYX</Elem>
+            <Elem>BT_USE_DOUBLE_PRECISION</Elem>
+            <Elem>ROS_PACKAGE_NAME="pr2_feeder"</Elem>
+          </preprocessorList>
+        </ccTool>
+      </folder>
+    </conf>
+  </confs>
+</configurationDescriptor>

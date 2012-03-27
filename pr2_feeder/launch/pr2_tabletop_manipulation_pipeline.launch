@@ -10,20 +10,19 @@
 
   <!-- client for object database running on remote server at Willow Garage -->
   <!-- DOES NOT WORK IN TRUNK RIGHT NOW -->
+  <!--
   <include file="$(find household_objects_database)/launch/objects_database_remote_client.launch"/>
-
+  -->
 
   <!-- alternative option: database server running on a local machine -->
-  <!--
-  <param name="/household_objects_database/database_host" value="localhost"/>
+  <param name="/household_objects_database/database_host" value="codebot.cs.cornell.edu"/>
   <param name="/household_objects_database/database_port" value="5432"/>
   <param name="/household_objects_database/database_user" value="willow"/>
   <param name="/household_objects_database/database_pass" value="willow"/>
   <param name="/household_objects_database/database_name" value="household_objects-0.2"/>
   <node pkg="household_objects_database" name="objects_database_node" type="objects_database_node" 
   	respawn="true" output="screen"/>
-  -->
-
+  
   <!-- manipulation prerequisites -->
   <include file="$(find pr2_object_manipulation_launch)/launch/pr2_manipulation_prerequisites.launch">
     <arg name="stereo" value="$(arg stereo)"/>    
