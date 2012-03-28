@@ -2,7 +2,6 @@
   <!-- start up empty world with pr2-->
   <include file="$(find pr2_gazebo)/pr2_empty_world.launch"/>
   <include file="$(find pr2_feeder)/launch/spawn_table_cup.launch"/>
-  <include file="$(find pr2_feeder)/launch/rviz.launch"/>
   <include file="$(find pr2_feeder)/launch/rxconsole.launch"/>
 
   <!-- Start the manipulation pipeline. The database parameters need to be set inside the launch file. -->

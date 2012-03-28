@@ -1,9 +1,13 @@
 <launch>
   <param name="desk_description" textfile="$(find gazebo_worlds)/objects/desk3.model" />
   <param name="coke_can_description" textfile="$(find gazebo_worlds)/objects/coke_can.urdf" />
+  <param name="bowl"  textfile="$(find gazebo_worlds)/objects/001.327.79.model" />
 
+<!--
   <node name="spawn_table" pkg="gazebo" type="spawn_model" args="-gazebo -param desk_description -model table  -x 1 -y 0.2 -z 0.01" respawn="false" output="screen" />
+  <node name="spawn_bowl" pkg="gazebo" type="spawn_model" args="-gazebo -param bowl -model bowl  -x 0.8 -y 0.02 -z 0.75" respawn="false" output="screen" />
   <node name="spawn_coke_can" pkg="gazebo" type="spawn_model" args="-urdf -param coke_can_description -model coke_can  -x 0.8 -y 0.02 -z 0.55" respawn="false" output="screen" />
+-->
 </launch>
 
 
