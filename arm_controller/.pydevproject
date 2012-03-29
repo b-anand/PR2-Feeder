@@ -103,4 +103,7 @@
 <path>/usr/lib/python2.6/dist-packages/wx-2.8-gtk2-unicode</path>
 <path>/usr/local/lib/python2.6/dist-packages</path>
 </pydev_pathproperty>
+<pydev_pathproperty name="org.python.pydev.PROJECT_SOURCE_PATH">
+<path>/arm_controller/scripts</path>
+</pydev_pathproperty>
 </pydev_project>
