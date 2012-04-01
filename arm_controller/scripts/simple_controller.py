@@ -10,12 +10,13 @@ Adapted from: http://www.ros.org/wiki/pr2_controllers/Tutorials/Moving%20the%20a
 import roslib; roslib.load_manifest('arm_controller')
 import rospy
 import actionlib
-from pr2_controllers_msgs.msg import JointTrajectoryAction, JointTrajectoryGoal
+from pr2_controllers_msgs.msg import JointTrajectoryAction, JointTrajectoryGoal, SingleJointPositionAction, SingleJointPositionGoal
 from trajectory_msgs.msg import JointTrajectoryPoint
 from actionlib_msgs.msg._GoalStatus import GoalStatus
 from ee_cart_imped_action import EECartImpedClient
-from tabletop_object_detector.srv import TabletopDetection, TabletopDetectionRequest
+from tabletop_object_detector.srv import TabletopDetection, TabletopDetectionRequest, TabletopDetectionResponse
 from arm_navigation_msgs.msg import MoveArmResult, MoveArmAction, MoveArmActionGoal, MoveArmGoal, JointConstraint, PositionConstraint, SimplePoseConstraint, OrientationConstraint, Shape
+from geometry_msgs.msg import Twist
 from kinematics_msgs.srv import GetPositionIK, GetPositionIKRequest, GetPositionIKResponse, GetKinematicSolverInfo, GetKinematicSolverInfoRequest
 import tf
 
@@ -23,8 +24,12 @@ from getch import getch
 
 import re
 import time
+from math import sqrt
+import numpy as np
 
 tf_listener = None
+arm_move_duration = 5
+robot_base_pub = None
 
 def get_trajectory_point(positions, time_from_start):
     point = JointTrajectoryPoint()
@@ -38,12 +43,13 @@ def task_completed(status, result):
     pass
 
 def move_body_part(service, joints, positions):
+    global arm_move_duration
     client = actionlib.SimpleActionClient(service, JointTrajectoryAction)
     client.wait_for_server()
     
     goal = JointTrajectoryGoal()
     goal.trajectory.joint_names = joints
-    point = get_trajectory_point(positions, roslib.rostime.Duration(0))
+    point = get_trajectory_point(positions, roslib.rostime.Duration(arm_move_duration))
     goal.trajectory.points.append(point)
     
     goal.trajectory.header.stamp = rospy.Time.now()
@@ -113,6 +119,9 @@ def imped_right_arm_control():
     control.sendGoal()
     
 def detect_objects():
+    '''
+    TODO: Need to figure out the target frame in which the cluster point co-ordinates are returned.
+    '''
     service_name = '/object_detection'
     rospy.wait_for_service(service_name)
     try:
@@ -123,10 +132,17 @@ def detect_objects():
         req.return_models = True
         req.num_models = 1
         
+        resp = TabletopDetectionResponse()
         resp = table_object_detector(req)
         if resp.detection.result == resp.detection.SUCCESS:
-            point = resp.detection.clusters[0].points[0]
-            return (point.x, point.y, point.z)
+            points = resp.detection.clusters[0].points
+            x_points = [point.x for point in points]
+            y_points = [point.y for point in points]
+            z_points = [point.z for point in points]
+            x = (min(x_points) + max(x_points)) / 2.0
+            y = (min(y_points) + max(y_points)) / 2.0
+            z = (min(z_points) + max(z_points)) / 2.0
+            return x, y, z
         else:
             print resp.detection.result
     except rospy.ServiceException, e:
@@ -357,33 +373,99 @@ def control_arm_joints():
             continue
         move_right_arm(positions)
 
+def get_spoon_location(a, b, d):
+    a = np.array(a)
+    b = np.array(b)
+    t = b - a
+    return a + d * t / np.linalg.norm(t)
+
+def get_spoon_lowest_position(positions_list, spoon_length):
+    move_right_arm(positions_list[1])
+    a = get_right_wrist_position()
+    move_right_arm(positions_list[2])
+    b = get_right_wrist_position()
+    return get_spoon_location(a, b, spoon_length)
+
+def move_body_torso(position):
+    service = 'torso_controller/position_joint_action'
+    joints = ['torso_lift_joint']
+    goal = SingleJointPositionGoal()
+    goal.position = position
+    goal.min_duration = roslib.rostime.Duration(2.0)
+    goal.max_velocity = 1.0
+     
+    client = actionlib.SimpleActionClient(service, SingleJointPositionAction)
+    client.send_goal(goal, done_cb=task_completed)
+    client.wait_for_result()
+
+def move_robot_base(x, y, z):
+    '''
+    each step will move the robot by 0.04 in that direction.
+    '''
+    global robot_base_pub
+    msg = Twist()
+    msg.linear.x = x
+    msg.linear.y = y
+    msg.linear.z = z
+    robot_base_pub.publish(msg)
+
+def get_robot_position():
+    return get_transform('/odom_combined', '/base_footprint')
+
+def get_move_step(x, gx):
+    return 0 if abs(gx - x) <= 0.03 else (gx - x) / abs(gx - x)
+
 def pick_food():
-    joint_names = [  "r_shoulder_pan_joint",
-                     "r_shoulder_lift_joint",
-                     "r_upper_arm_roll_joint",
-                     "r_elbow_flex_joint",
-                     "r_forearm_roll_joint",
-                     "r_wrist_flex_joint",
-                     "r_wrist_roll_joint"]
+    positions_list = [
+        [-0.5, -0.18, -2, -1.2, 5, -1.6, 0], # initial state
+        [-0.200, -0.354, -2.250, -1.901, -1.383, -1.6, 6.283], # pickup start state.
+        [-0.080, -0.18, -2.250, -1.901, -1.383, -1.6, 6.283], #controls the downward push  
+        [-0.080, -0.18, -2.250, -1.901, -1.383, -0.75, 6.283], # pickup food.
+        [-0.200, -0.354, -1.500, -1.901, -1.383, -1.600, 6.283], # raise hand
+        [-0.2, -0.053, -1.501, -0.119, -1.587, -1.601, 6.285], # move hand away
+        ]
     
-    input_string = """
-['-0.200', '-0.354', '-2.250', '-1.901', '-1.383', '-1.900', '6.283'] # pickup start state.
-['-0.080', '-0.18', '-2.250', '-1.901', '-1.383', '-1.900', '6.283'] #controls the downward push  
-['-0.080', '-0.18', '-2.250', '-1.901', '-1.383', '-0.75', '6.283'] # pickup food.
-['-0.200', '-0.354', '-1.500', '-1.901', '-1.383', '-1.600', '6.283'] # raise hand
-['-0.2', '-0.053', '-1.501', '-0.119', '-1.587', '-1.601', '6.285'] # move hand away
-"""
-    
-    positions_list = [[float(entry[1:-1]) for entry in input_line[1:].split("]")[0].split(", ")] for input_line in input_string.split("\n") if len(input_line) > 0]
-    #positions_list.insert(0, [-0.5, -0.18, -2, -1.2, 5, -1.6, 0])
-    for i, positions in enumerate(positions_list):
+    for positions in positions_list:
         move_right_arm(positions)
-        a = input( "Done" + str(i+1) + "enter to continue:")
+    
+def initialize_robot_position():
+    spoon_pos = [ 0.3897393, 0.01832924, 0.61063554] # obtained by calling get_spoon_lowest_position with spoon_length = 0.1
+    
+    tx, ty, tz = detect_objects()
+    print tx, ty, tz
+    current_pos = get_robot_position()
+    cx, cy, cz = current_pos
+    print "start", current_pos
+    target_pos = (cx + tx - spoon_pos[0], cy + ty - spoon_pos[1], cz)
+    print "target", target_pos
+    tp = np.array(target_pos)
+    cp = np.array(current_pos)
+    
+    while True:
+        xstep = get_move_step(cp[0], tp[0])
+        ystep = get_move_step(cp[1], tp[1])
+        if xstep == 0 and ystep == 0:
+            print "Reached near the goal."
+            break
+        move_robot_base(xstep, ystep, 0)
+        rospy.sleep(1)
+        cp = np.array(get_robot_position())
+        print cp    
         
+def initialize_body():
+    move_right_arm_initial_pose()
+    move_left_arm_initial_pose()
+    move_head_initial_pose()
+    print "Initialized robot body."
     
 if __name__ == '__main__':
+    robot_base_pub = rospy.Publisher("base_controller/command", Twist)
     rospy.init_node('move_arm_trajectory_client')
+    initialize_body()
+    initialize_robot_position()
     pick_food()
+
+    """
     #control_arm_joints()
 
     #move_right_arm_initial_pose()
@@ -404,7 +486,7 @@ if __name__ == '__main__':
     #get_ik_info()
     #move_right_arm_pickup_start_state()
 
-    """
+    
     #time.sleep(10)
     
     '''
