@@ -24,7 +24,7 @@ left_joint_names =  ["l_shoulder_pan_joint",
                 "l_wrist_flex_joint",
                 "l_wrist_roll_joint"]
 
-joints = head_joints
+joints = right_joint_names
 
 def joint_state_callback(msg):
     print ["%0.3f" % msg.position[i] for joint in joints for i, name in enumerate(msg.name) if name == joint]
