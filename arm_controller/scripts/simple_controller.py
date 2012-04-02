@@ -10,8 +10,8 @@ Adapted from: http://www.ros.org/wiki/pr2_controllers/Tutorials/Moving%20the%20a
 import roslib; roslib.load_manifest('arm_controller')
 import rospy
 import actionlib
-from pr2_controllers_msgs.msg import JointTrajectoryAction, JointTrajectoryGoal, SingleJointPositionAction, SingleJointPositionGoal
-from trajectory_msgs.msg import JointTrajectoryPoint
+from pr2_controllers_msgs.msg import JointTrajectoryAction, JointTrajectoryGoal, SingleJointPositionAction, SingleJointPositionGoal, JointTrajectoryControllerState
+from trajectory_msgs.msg import JointTrajectoryPoint, JointTrajectory
 from actionlib_msgs.msg._GoalStatus import GoalStatus
 from ee_cart_imped_action import EECartImpedClient
 from tabletop_object_detector.srv import TabletopDetection, TabletopDetectionRequest, TabletopDetectionResponse
@@ -28,8 +28,9 @@ from math import sqrt
 import numpy as np
 
 tf_listener = None
-arm_move_duration = 5
+arm_move_duration = 0
 robot_base_pub = None
+torso_pub = None 
 
 def get_trajectory_point(positions, time_from_start):
     point = JointTrajectoryPoint()
@@ -319,7 +320,7 @@ def get_transform(link1, link2):
 
 
 def get_right_wrist_position():
-    return get_transform('/base_link', '/r_wrist_roll_link')
+    return get_transform('/base_footprint', '/r_gripper_l_finger_tip_link')
     
 def get_dir(x, gx):
     return 0 if (gx - x) == 0 else (gx - x) / abs(gx - x)
@@ -376,19 +377,29 @@ def control_arm_joints():
 def get_spoon_location(a, b, d):
     a = np.array(a)
     b = np.array(b)
-    t = b - a
-    return a + d * t / np.linalg.norm(t)
+    t = a - b
+    return b - d * t / np.linalg.norm(t)
 
-def get_spoon_lowest_position(positions_list, spoon_length):
+def get_spoon_lowest_position(positions_list = None, spoon_length = 0.1):
+    if positions_list is None:
+        positions_list = [
+        [-0.5, -0.18, -2, -1.2, 5, -1.6, 0], # initial state
+        [-0.200, -0.354, -2.250, -1.901, -1.383, -1.6, 6.283], # pickup start state.
+        [-0.080, -0.18, -2.250, -1.901, -1.383, -1.6, 6.283], #controls the downward push  
+        [-0.080, -0.18, -2.250, -1.901, -1.383, -0.75, 6.283], # pickup food.
+        [-0.200, -0.354, -1.500, -1.901, -1.383, -1.600, 6.283], # raise hand
+        [-0.2, -0.053, -1.501, -0.119, -1.587, -1.601, 6.285], # move hand away
+        ]
     move_right_arm(positions_list[1])
     a = get_right_wrist_position()
+    print a
     move_right_arm(positions_list[2])
     b = get_right_wrist_position()
+    print b
     return get_spoon_location(a, b, spoon_length)
 
 def move_body_torso(position):
     service = 'torso_controller/position_joint_action'
-    joints = ['torso_lift_joint']
     goal = SingleJointPositionGoal()
     goal.position = position
     goal.min_duration = roslib.rostime.Duration(2.0)
@@ -409,6 +420,28 @@ def move_robot_base(x, y, z):
     msg.linear.z = z
     robot_base_pub.publish(msg)
 
+def move_torso_position(position):
+    global torso_pub
+    traj = JointTrajectory()
+    traj.header.stamp = rospy.get_rostime()
+    traj.joint_names.append("torso_lift_joint");
+    traj.points.append(JointTrajectoryPoint())
+    traj.points[0].positions.append(position)
+    traj.points[0].velocities.append(1)
+    traj.points[0].time_from_start = rospy.Duration(0.25)
+    torso_pub.publish(traj)
+    
+    sz = 0.8 # start state hieght of torso_lift_link
+    cz = get_torso_position()[2]
+    epsilon = 0.02
+    while abs(abs(cz - sz) - position) > epsilon:
+        cz = get_torso_position()[2]
+        rospy.sleep(0.2)
+    
+    
+def get_torso_position():
+    return get_transform('/odom_combined', '/torso_lift_link')
+
 def get_robot_position():
     return get_transform('/odom_combined', '/base_footprint')
 
@@ -427,9 +460,10 @@ def pick_food():
     
     for positions in positions_list:
         move_right_arm(positions)
+        rospy.sleep(2)
     
 def initialize_robot_position():
-    spoon_pos = [ 0.3897393, 0.01832924, 0.61063554] # obtained by calling get_spoon_lowest_position with spoon_length = 0.1
+    spoon_pos = [ 0.39501852, -0.0907355,   0.45095445] # obtained by calling get_spoon_lowest_position with spoon_length = 0.1
     
     tx, ty, tz = detect_objects()
     print tx, ty, tz
@@ -450,69 +484,27 @@ def initialize_robot_position():
         move_robot_base(xstep, ystep, 0)
         rospy.sleep(1)
         cp = np.array(get_robot_position())
-        print cp    
+        print cp
+    
+    move_torso_position(tz - spoon_pos[2] + 0.05) # TODO: offset of 5 cms, needs to be changed based on actual spoon size.
+    print "Moved torso to final pos."    
         
 def initialize_body():
     move_right_arm_initial_pose()
     move_left_arm_initial_pose()
     move_head_initial_pose()
     print "Initialized robot body."
+    rospy.sleep(8)
     
 if __name__ == '__main__':
+    '''
+    TODO: 
+    1. Change arm_move_duration to 5 before running on pr2.
+    2. Velocity of torso_controller needs to be set properly before running on pr2.
+    '''
     robot_base_pub = rospy.Publisher("base_controller/command", Twist)
+    torso_pub= rospy.Publisher('torso_controller/command', JointTrajectory)
     rospy.init_node('move_arm_trajectory_client')
     initialize_body()
     initialize_robot_position()
     pick_food()
-
-    """
-    #control_arm_joints()
-
-    #move_right_arm_initial_pose()
-    '''
-    move_right_arm_initial_pose()
-    move_left_arm_initial_pose()
-    move_head_initial_pose()
-    time.sleep(10)
-    detect_objects()
-    move_right_arm_pickup_start_state()
-    time.sleep(10)
-    move_arm_ompl()
-    get_ik_info()
-    time.sleep(10)
-    '''
-    #move_right_arm_initial_pose()
-    
-    #get_ik_info()
-    #move_right_arm_pickup_start_state()
-
-    
-    #time.sleep(10)
-    
-    '''
-    dx = get_dir(x, gx)
-    dy = get_dir(y, gy)
-    dz = get_dir(z, gz)
-    print dx, dy, dz
-    
-    step = 0.02
-    nx, ny, nz = x, y + step, z
-    print nx, ny, nz
-    '''
-    x, y, z = get_right_wrist_position()
-    print "wrist", x, y, z
-    
-    gx, gy, gz = detect_objects()
-    print "objects", gx, gy, gz
-    
-    nx, ny, nz = gx, gy, gz
-    move_arm_ompl(x, y - 0.02m, z)
-        
-    
-    #time.sleep(10)
-    #solve_ik(0.655698537827, 0.0111701283604, 0.523343801498)
-    #move_right_arm_pickup_start_state()
-    #time.sleep(10)
-    #x, y, z = detect_objects()
-    #print x, y, z
-    """
