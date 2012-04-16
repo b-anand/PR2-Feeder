@@ -13,7 +13,7 @@ import actionlib
 from pr2_controllers_msgs.msg import JointTrajectoryAction, JointTrajectoryGoal, SingleJointPositionAction, SingleJointPositionGoal, JointTrajectoryControllerState
 from trajectory_msgs.msg import JointTrajectoryPoint, JointTrajectory
 from actionlib_msgs.msg._GoalStatus import GoalStatus
-from ee_cart_imped_action import EECartImpedClient
+#from ee_cart_imped_action import EECartImpedClient
 from tabletop_object_detector.srv import TabletopDetection, TabletopDetectionRequest, TabletopDetectionResponse
 from arm_navigation_msgs.msg import MoveArmResult, MoveArmAction, MoveArmActionGoal, MoveArmGoal, JointConstraint, PositionConstraint, SimplePoseConstraint, OrientationConstraint, Shape
 from geometry_msgs.msg import Twist

@@ -1,0 +1,16 @@
+<package>
+  <description brief="food_detector">
+
+     food_detector
+
+  </description>
+  <author>Shreesh Ayachit</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/food_detector</url>
+  <depend package="roslib"/>
+  <depend package="roscpp"/>
+  <depend package="tabletop_object_detector"/>
+</package>
+
+
