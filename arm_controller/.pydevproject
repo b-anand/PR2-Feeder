@@ -87,6 +87,10 @@
 <path>/opt/ros/electric/stacks/ros_comm/messages/std_srvs/src</path>
 <path>/opt/ros/electric/stacks/pr2_common/pr2_msgs/src</path>
 <path>/opt/ros/electric/stacks/arm_navigation/kinematics_msgs/src</path>
+<path>/home/ab2283/ros/uu-isrc-robotics-pr2-pkgs/pr2_control_utilities/src</path>
+<path>/opt/ros/electric/stacks/arm_navigation_experimental/interpolated_ik_motion_planner/src</path>
+<path>/opt/ros/electric/stacks/navigation/move_base_msgs/src</path>
+<path>/opt/ros/electric/stacks/common_msgs/nav_msgs/src</path>
 <path>/opt/ros/electric/ros/core/mk</path>
 <path>/opt/ros/electric/ros/core/roslib/src</path>
 <path>/home/ab2283/workspace/git/PR2-Feeder/arm_controller</path>
@@ -102,8 +106,5 @@
 <path>/usr/lib/pymodules/python2.6/gtk-2.0</path>
 <path>/usr/lib/python2.6/dist-packages/wx-2.8-gtk2-unicode</path>
 <path>/usr/local/lib/python2.6/dist-packages</path>
-</pydev_pathproperty>
-<pydev_pathproperty name="org.python.pydev.PROJECT_SOURCE_PATH">
-<path>/arm_controller-RelWithDebInfo@arm_controller/scripts</path>
 </pydev_pathproperty>
 </pydev_project>
