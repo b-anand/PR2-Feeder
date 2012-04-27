@@ -232,14 +232,14 @@ def control_arm_joints():
     """
     move_right_arm(positions)
     """
-    step = 0.02
+    step = 0.05
     
     stop = False
     print "Enter Controls:"
     while not stop:
         c = getch()
         c = c.lower()
-        if c not in ["a", "z", "s", "x", "d", "c", "f", "v", "g", "b", "h", "n", "j", "m"]:
+        if c not in ["a", "z", "s", "x", "d", "c", "f", "v", "g", "b", "h", "n", "j", "m", "k", ","]:
             print "Enter correct choice, q for exit"
             continue
         elif c == "a":
@@ -270,6 +270,12 @@ def control_arm_joints():
             positions[6] += step
         elif c == "m":
             positions[6] -= step
+        elif c == "k":
+            step = step * 2.0
+            print step
+        elif c == ",":
+            step = step / 2.0
+            print step
         elif c == "q":
             stop = True
             continue
@@ -395,7 +401,8 @@ def initialize_body():
     move_left_arm_initial_pose()
     move_head_initial_pose()
     print "Initialized robot body."
-    #rospy.sleep(10)
+    if arm_move_duration > 0:
+        rospy.sleep(10)
 
 def getJointConstraints(goal):
     joint_names = ["r_shoulder_pan_joint", "r_shoulder_lift_joint",
@@ -518,20 +525,27 @@ if __name__ == '__main__':
     ob = detect_objects()
     print "Object", ob
     tx, ty, tz = ob
-    # target quaternion  = 0.015, 0.427, 0.007, 0.904
-    # for the given difference from tx, ty and tz i.e. (-0.2, 0, 0.3)
-    ox, oy, oz, ow = 0.015, 0.427, 0.007, 0.904
-    move_arm_ompl(tx - 0.2, ty, tz + 0.3, ox, oy, oz, ow)
+    ox, oy, oz, ow = -0.633, 0.295, 0.312, 0.644 # corresponding to (-0.2, -0.02, 0.3) from the target point.
+    move_arm_ompl(tx - 0.2, ty - 0.02, tz + 0.3, ox, oy, oz, ow)
     w = get_transform("odom_combined", "r_wrist_roll_link");
     print "Wrist", w
     g = get_transform("odom_combined", "r_gripper_tool_frame");
     print "Gripper", g
-    for step in np.arange(0.01, 0.05, 0.01):
+    n = get_extrapolated_location(g, w, -0.05)
+    print "New position", n
+    nx, ny, nz = n
+    move_arm_ompl(nx, ny, nz, ox, oy, oz, ow)
+    w = get_transform("odom_combined", "r_wrist_roll_link");
+    print "Wrist", w
+    move_arm_ompl(w[0] + 0.1, w[1], w[2] + 0.05, ox, oy, oz, ow)
+    """
+    for step in np.arange(0.01, 0.05, 0.003):
         n = get_extrapolated_location(g, w, -step)
         print "New position", n
         print "Step", step
         nx, ny, nz = n
-        move_arm_ompl(nx, ny, nz, 0.015, 0.427, 0.007, 0.904)
+        move_arm_ompl(nx, ny, nz, ox, oy, oz, ow)
     w = get_transform("odom_combined", "r_wrist_roll_link");
     print "Wrist", w
-    move_arm_ompl(w[0] + 0.1, w[1], w[2] + 0.05)
+    move_arm_ompl(w[0] + 0.1, w[1], w[2] + 0.05, ox, oy, oz, ow)
+    """
