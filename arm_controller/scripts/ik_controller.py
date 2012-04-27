@@ -459,7 +459,7 @@ def addOrientationConstraint(goal, ox=0.0, oy=0.0, oz=0.0, ow=0.0, frame="odom_c
     constraint.weight = 1.0
     goal.motion_plan_request.goal_constraints.orientation_constraints.append(constraint)
 
-def move_arm_ompl(x, y, z, ox=0.0, oy=0.0, oz=0.0, ow=1.0, frame="odom_combined"):
+def move_arm_ompl(x, y, z, ox=0.0, oy=0.0, oz=0.0, ow=1.0, shoulder_tolerance=(0.5, 0.3), frame="odom_combined"):
     service = "move_right_arm"
     client = actionlib.SimpleActionClient(service, MoveArmAction)
     client.wait_for_server()
@@ -478,8 +478,8 @@ def move_arm_ompl(x, y, z, ox=0.0, oy=0.0, oz=0.0, ow=1.0, frame="odom_combined"
     constraint = JointConstraint()
     constraint.joint_name = "r_shoulder_lift_joint"
     constraint.position = -0.05
-    constraint.tolerance_above = 0.5
-    constraint.tolerance_below = 0.3
+    constraint.tolerance_above = shoulder_tolerance[0]
+    constraint.tolerance_below = shoulder_tolerance[1]
     constraint.weight = 1.0
     goal.motion_plan_request.goal_constraints.joint_constraints.append(constraint)
     
@@ -525,8 +525,10 @@ if __name__ == '__main__':
     ob = detect_objects()
     print "Object", ob
     tx, ty, tz = ob
-    ox, oy, oz, ow = -0.633, 0.295, 0.312, 0.644 # corresponding to (-0.2, -0.02, 0.3) from the target point.
-    move_arm_ompl(tx - 0.2, ty - 0.02, tz + 0.3, ox, oy, oz, ow)
+    #ox, oy, oz, ow = -0.633, 0.295, 0.312, 0.644 # corresponding to (-0.2, -0.02, 0.3) from the target point.
+    ox, oy, oz, ow = -0.707, 0.116, 0.102, 0.690 # corresponding to (-0.3, -0.02, 0.15) from the target point.
+    move_arm_ompl(tx - 0.3, ty - 0.02, tz + 0.15, ox, oy, oz, ow)
+    print "Arm positions", robot_state.right_arm_positions
     w = get_transform("odom_combined", "r_wrist_roll_link");
     print "Wrist", w
     g = get_transform("odom_combined", "r_gripper_tool_frame");
@@ -534,10 +536,11 @@ if __name__ == '__main__':
     n = get_extrapolated_location(g, w, -0.05)
     print "New position", n
     nx, ny, nz = n
-    move_arm_ompl(nx, ny, nz, ox, oy, oz, ow)
+    move_arm_ompl(nx, ny, nz, ox, oy, oz, ow, (0.001, 0.3))
+    move_arm_ompl(nx, ny, nz, -0.715, 0.001, 0.001, 0.699)
     w = get_transform("odom_combined", "r_wrist_roll_link");
     print "Wrist", w
-    move_arm_ompl(w[0] + 0.1, w[1], w[2] + 0.05, ox, oy, oz, ow)
+    move_arm_ompl(w[0] + 0.1, w[1], w[2] + 0.05, -0.715, 0.001, 0.001, 0.699)
     """
     for step in np.arange(0.01, 0.05, 0.003):
         n = get_extrapolated_location(g, w, -step)
