@@ -10,7 +10,7 @@ Adapted from: http://www.ros.org/wiki/pr2_controllers/Tutorials/Moving%20the%20a
 import roslib; roslib.load_manifest('arm_controller')
 import rospy
 import actionlib
-from pr2_controllers_msgs.msg import JointTrajectoryAction, JointTrajectoryGoal, SingleJointPositionAction, SingleJointPositionGoal, JointTrajectoryControllerState
+from pr2_controllers_msgs.msg import Pr2GripperCommandAction, Pr2GripperCommandGoal,JointTrajectoryAction, JointTrajectoryGoal, SingleJointPositionAction, SingleJointPositionGoal, JointTrajectoryControllerState
 from trajectory_msgs.msg import JointTrajectoryPoint, JointTrajectory
 from actionlib_msgs.msg._GoalStatus import GoalStatus
 from ee_cart_imped_action import EECartImpedClient
@@ -459,9 +459,27 @@ def addOrientationConstraint(goal, ox=0.0, oy=0.0, oz=0.0, ow=0.0, frame="odom_c
     constraint.weight = 1.0
     goal.motion_plan_request.goal_constraints.orientation_constraints.append(constraint)
 
-def move_arm_ompl(x, y, z, ox=0.0, oy=0.0, oz=0.0, ow=1.0, shoulder_tolerance=(0.5, 0.3), frame="odom_combined"):
-    service = "move_right_arm"
-    client = actionlib.SimpleActionClient(service, MoveArmAction)
+def open_close_gripper(arm):
+    if arm is "right":
+        service = "r_gripper_controller/gripper_action"
+    else:
+        service = "l_gripper_controller/gripper_action"
+    client = actionlib.SimpleActionClient(service, Pr2GripperCommandAction)
+    client.wait_for_server()
+    goal = Pr2GripperCommandGoal()
+    goal.command.position = 0.08
+    goal.command.max_effort = -1 # open fast.
+    client.send_goal(goal)
+    client.wait_for_result()
+    goal = Pr2GripperCommandGoal()
+    goal.command.position = 0.0
+    goal.command.max_effort = 50 # close slowly
+    client.send_goal(goal)
+    client.wait_for_result()
+    
+
+def move_arm_ompl(x, y, z, ox=0.0, oy=0.0, oz=0.0, ow=1.0, arm_service = "move_right_arm", shoulder_tolerance=(0.5, 0.3), frame="odom_combined"):
+    client = actionlib.SimpleActionClient(arm_service, MoveArmAction)
     client.wait_for_server()
     
     goal = MoveArmGoal()
@@ -522,9 +540,19 @@ if __name__ == '__main__':
     robot_state = RobotState()
     initialize_body()
     time.sleep(25) # hack in simulator
+    open_close_gripper("right")
     ob = detect_objects()
     print "Object", ob
     tx, ty, tz = ob
+    pickup_start_pos = [-0.3062584362548515, 
+                        -0.081308235273236384, 
+                        -1.4891726423935046, 
+                        -1.8378231877402087, 
+                        -3.1876395250452916, 
+                        -1.2986634269818813, 
+                        -2.8857228901968845]
+    move_right_arm(pickup_start_pos)
+    print "Moved arm to pick up start position"
     #ox, oy, oz, ow = -0.633, 0.295, 0.312, 0.644 # corresponding to (-0.2, -0.02, 0.3) from the target point.
     ox, oy, oz, ow = -0.707, 0.116, 0.102, 0.690 # corresponding to (-0.3, -0.02, 0.15) from the target point.
     move_arm_ompl(tx - 0.3, ty - 0.02, tz + 0.15, ox, oy, oz, ow)
@@ -536,7 +564,7 @@ if __name__ == '__main__':
     n = get_extrapolated_location(g, w, -0.05)
     print "New position", n
     nx, ny, nz = n
-    move_arm_ompl(nx, ny, nz, ox, oy, oz, ow, (0.001, 0.3))
+    move_arm_ompl(nx, ny, nz, ox, oy, oz, ow, shoulder_tolerance=(0.001, 0.3))
     move_arm_ompl(nx, ny, nz, -0.715, 0.001, 0.001, 0.699)
     w = get_transform("odom_combined", "r_wrist_roll_link");
     print "Wrist", w
@@ -552,3 +580,4 @@ if __name__ == '__main__':
     print "Wrist", w
     move_arm_ompl(w[0] + 0.1, w[1], w[2] + 0.05, ox, oy, oz, ow)
     """
+    
