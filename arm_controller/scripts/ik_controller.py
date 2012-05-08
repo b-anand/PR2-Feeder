@@ -10,7 +10,7 @@ Adapted from: http://www.ros.org/wiki/pr2_controllers/Tutorials/Moving%20the%20a
 import roslib; roslib.load_manifest('arm_controller')
 import rospy
 import actionlib
-from pr2_controllers_msgs.msg import JointTrajectoryAction, JointTrajectoryGoal, SingleJointPositionAction, SingleJointPositionGoal, JointTrajectoryControllerState
+from pr2_controllers_msgs.msg import Pr2GripperCommandAction, Pr2GripperCommandGoal,JointTrajectoryAction, JointTrajectoryGoal, SingleJointPositionAction, SingleJointPositionGoal, JointTrajectoryControllerState
 from trajectory_msgs.msg import JointTrajectoryPoint, JointTrajectory
 from actionlib_msgs.msg._GoalStatus import GoalStatus
 from ee_cart_imped_action import EECartImpedClient
@@ -232,14 +232,14 @@ def control_arm_joints():
     """
     move_right_arm(positions)
     """
-    step = 0.02
+    step = 0.05
     
     stop = False
     print "Enter Controls:"
     while not stop:
         c = getch()
         c = c.lower()
-        if c not in ["a", "z", "s", "x", "d", "c", "f", "v", "g", "b", "h", "n", "j", "m"]:
+        if c not in ["a", "z", "s", "x", "d", "c", "f", "v", "g", "b", "h", "n", "j", "m", "k", ","]:
             print "Enter correct choice, q for exit"
             continue
         elif c == "a":
@@ -270,6 +270,12 @@ def control_arm_joints():
             positions[6] += step
         elif c == "m":
             positions[6] -= step
+        elif c == "k":
+            step = step * 2.0
+            print step
+        elif c == ",":
+            step = step / 2.0
+            print step
         elif c == "q":
             stop = True
             continue
@@ -395,7 +401,8 @@ def initialize_body():
     move_left_arm_initial_pose()
     move_head_initial_pose()
     print "Initialized robot body."
-    #rospy.sleep(10)
+    if arm_move_duration > 0:
+        rospy.sleep(10)
 
 def getJointConstraints(goal):
     joint_names = ["r_shoulder_pan_joint", "r_shoulder_lift_joint",
@@ -452,9 +459,27 @@ def addOrientationConstraint(goal, ox=0.0, oy=0.0, oz=0.0, ow=0.0, frame="odom_c
     constraint.weight = 1.0
     goal.motion_plan_request.goal_constraints.orientation_constraints.append(constraint)
 
-def move_arm_ompl(x, y, z, ox=0.0, oy=0.0, oz=0.0, ow=1.0, frame="odom_combined"):
-    service = "move_right_arm"
-    client = actionlib.SimpleActionClient(service, MoveArmAction)
+def open_close_gripper(arm):
+    if arm is "right":
+        service = "r_gripper_controller/gripper_action"
+    else:
+        service = "l_gripper_controller/gripper_action"
+    client = actionlib.SimpleActionClient(service, Pr2GripperCommandAction)
+    client.wait_for_server()
+    goal = Pr2GripperCommandGoal()
+    goal.command.position = 0.08
+    goal.command.max_effort = -1 # open fast.
+    client.send_goal(goal)
+    client.wait_for_result()
+    goal = Pr2GripperCommandGoal()
+    goal.command.position = 0.0
+    goal.command.max_effort = 50 # close slowly
+    client.send_goal(goal)
+    client.wait_for_result()
+    
+
+def move_arm_ompl(x, y, z, ox=0.0, oy=0.0, oz=0.0, ow=1.0, arm_service = "move_right_arm", shoulder_tolerance=(0.5, 0.3), frame="odom_combined"):
+    client = actionlib.SimpleActionClient(arm_service, MoveArmAction)
     client.wait_for_server()
     
     goal = MoveArmGoal()
@@ -471,8 +496,8 @@ def move_arm_ompl(x, y, z, ox=0.0, oy=0.0, oz=0.0, ow=1.0, frame="odom_combined"
     constraint = JointConstraint()
     constraint.joint_name = "r_shoulder_lift_joint"
     constraint.position = -0.05
-    constraint.tolerance_above = 0.5
-    constraint.tolerance_below = 0.3
+    constraint.tolerance_above = shoulder_tolerance[0]
+    constraint.tolerance_below = shoulder_tolerance[1]
     constraint.weight = 1.0
     goal.motion_plan_request.goal_constraints.joint_constraints.append(constraint)
     
@@ -515,23 +540,44 @@ if __name__ == '__main__':
     robot_state = RobotState()
     initialize_body()
     time.sleep(25) # hack in simulator
+    open_close_gripper("right")
     ob = detect_objects()
     print "Object", ob
     tx, ty, tz = ob
-    # target quaternion  = 0.015, 0.427, 0.007, 0.904
-    # for the given difference from tx, ty and tz i.e. (-0.2, 0, 0.3)
-    ox, oy, oz, ow = 0.015, 0.427, 0.007, 0.904
-    move_arm_ompl(tx - 0.2, ty, tz + 0.3, ox, oy, oz, ow)
+    pickup_start_pos = [-0.3062584362548515, 
+                        -0.081308235273236384, 
+                        -1.4891726423935046, 
+                        -1.8378231877402087, 
+                        -3.1876395250452916, 
+                        -1.2986634269818813, 
+                        -2.8857228901968845]
+    move_right_arm(pickup_start_pos)
+    print "Moved arm to pick up start position"
+    #ox, oy, oz, ow = -0.633, 0.295, 0.312, 0.644 # corresponding to (-0.2, -0.02, 0.3) from the target point.
+    ox, oy, oz, ow = -0.707, 0.116, 0.102, 0.690 # corresponding to (-0.3, -0.02, 0.15) from the target point.
+    move_arm_ompl(tx - 0.3, ty - 0.02, tz + 0.15, ox, oy, oz, ow)
+    print "Arm positions", robot_state.right_arm_positions
     w = get_transform("odom_combined", "r_wrist_roll_link");
     print "Wrist", w
     g = get_transform("odom_combined", "r_gripper_tool_frame");
     print "Gripper", g
-    for step in np.arange(0.01, 0.05, 0.01):
+    n = get_extrapolated_location(g, w, -0.05)
+    print "New position", n
+    nx, ny, nz = n
+    move_arm_ompl(nx, ny, nz, ox, oy, oz, ow, shoulder_tolerance=(0.001, 0.3))
+    move_arm_ompl(nx, ny, nz, -0.715, 0.001, 0.001, 0.699)
+    w = get_transform("odom_combined", "r_wrist_roll_link");
+    print "Wrist", w
+    move_arm_ompl(w[0] + 0.1, w[1], w[2] + 0.05, -0.715, 0.001, 0.001, 0.699)
+    """
+    for step in np.arange(0.01, 0.05, 0.003):
         n = get_extrapolated_location(g, w, -step)
         print "New position", n
         print "Step", step
         nx, ny, nz = n
-        move_arm_ompl(nx, ny, nz, 0.015, 0.427, 0.007, 0.904)
+        move_arm_ompl(nx, ny, nz, ox, oy, oz, ow)
     w = get_transform("odom_combined", "r_wrist_roll_link");
     print "Wrist", w
-    move_arm_ompl(w[0] + 0.1, w[1], w[2] + 0.05)
+    move_arm_ompl(w[0] + 0.1, w[1], w[2] + 0.05, ox, oy, oz, ow)
+    """
+    
