@@ -11,6 +11,8 @@
   <depend package="roslib"/>
   <depend package="roscpp"/>
   <depend package="tabletop_object_detector"/>
+  <depend package="pcl_ros" /> 
+  <depend package="pcl" /> 
 </package>
 
 
