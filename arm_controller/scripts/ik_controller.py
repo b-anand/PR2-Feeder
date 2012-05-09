@@ -29,7 +29,7 @@ import numpy as np
 from simple_controller import move_arm_ompl
 
 tf_listener = None
-arm_move_duration = 0
+arm_move_duration = 5
 robot_base_pub = None
 torso_pub = None 
 robot_state = None
@@ -214,7 +214,7 @@ def get_transform(link1, link2):
     while not rospy.is_shutdown():
         try:
             (trans, rot) = tf_listener.lookupTransform(link1, link2, rospy.Time(0))
-            return trans
+            return trans, rot
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
 
@@ -401,8 +401,8 @@ def initialize_body():
     move_left_arm_initial_pose()
     move_head_initial_pose()
     print "Initialized robot body."
-    if arm_move_duration > 0:
-        rospy.sleep(10)
+    #if arm_move_duration > 0:
+    #    rospy.sleep(5)
 
 def getJointConstraints(goal):
     joint_names = ["r_shoulder_pan_joint", "r_shoulder_lift_joint",
@@ -436,9 +436,9 @@ def addPositionConstraint(goal, x, y, z, frame="odom_combined"):
     constraint.position.y = y
     constraint.position.z = z
     constraint.constraint_region_shape.type = Shape.BOX
-    constraint.constraint_region_shape.dimensions.append(0.01)
-    constraint.constraint_region_shape.dimensions.append(0.01)
-    constraint.constraint_region_shape.dimensions.append(0.01)
+    constraint.constraint_region_shape.dimensions.append(0.02)
+    constraint.constraint_region_shape.dimensions.append(0.02)
+    constraint.constraint_region_shape.dimensions.append(0.02)
     constraint.constraint_region_orientation.w = 1.0
     constraint.weight = 1.0
     goal.motion_plan_request.goal_constraints.position_constraints.append(constraint)
@@ -471,6 +471,7 @@ def open_close_gripper(arm):
     goal.command.max_effort = -1 # open fast.
     client.send_goal(goal)
     client.wait_for_result()
+    time.sleep(5)
     goal = Pr2GripperCommandGoal()
     goal.command.position = 0.0
     goal.command.max_effort = 50 # close slowly
@@ -538,37 +539,47 @@ if __name__ == '__main__':
     rospy.init_node('move_arm_trajectory_client')
     print "Initialized node"
     robot_state = RobotState()
+    w, _ = get_transform("odom_combined", "r_wrist_roll_link");
+    print "Wrist", w
+    g, _ = get_transform("odom_combined", "r_gripper_tool_frame");
+    print "Gripper", g
     initialize_body()
-    time.sleep(25) # hack in simulator
-    open_close_gripper("right")
+    #print "about to open close gripper"
+    #open_close_gripper("right")
+    print "about to detect objects"
     ob = detect_objects()
     print "Object", ob
     tx, ty, tz = ob
-    pickup_start_pos = [-0.3062584362548515, 
-                        -0.081308235273236384, 
-                        -1.4891726423935046, 
-                        -1.8378231877402087, 
-                        -3.1876395250452916, 
-                        -1.2986634269818813, 
-                        -2.8857228901968845]
-    move_right_arm(pickup_start_pos)
-    print "Moved arm to pick up start position"
-    #ox, oy, oz, ow = -0.633, 0.295, 0.312, 0.644 # corresponding to (-0.2, -0.02, 0.3) from the target point.
-    ox, oy, oz, ow = -0.707, 0.116, 0.102, 0.690 # corresponding to (-0.3, -0.02, 0.15) from the target point.
-    move_arm_ompl(tx - 0.3, ty - 0.02, tz + 0.15, ox, oy, oz, ow)
-    print "Arm positions", robot_state.right_arm_positions
-    w = get_transform("odom_combined", "r_wrist_roll_link");
+    ik_start_pos = [-0.328, -0.112, -1.634, -1.806, 28.753, -1.468, -34.721]
+    move_right_arm(ik_start_pos)
+    print "Moved arm to ik pick up start position"
+    ox, oy, oz, ow = -0.720, 0.259, 0.246, 0.595
+    dx, dy, dz = -0.22, 0, 0.3
+    print "Pre-Pickup position:", tx + dx, ty + dy, tz + dz
+    move_arm_ompl(tx + dx, ty + dy, tz + dz, ox, oy, oz, ow, shoulder_tolerance=(0.001, 0.3))
+    dz = 0.22
+    print "Pickup position:", tx + dx, ty + dy, tz + dz
+    move_arm_ompl(tx + dx, ty + dy, tz + dz, ox, oy, oz, ow, shoulder_tolerance=(0.001, 0.3))
+    #print "Current Arm positions", robot_state.right_arm_positions
+    w, _ = get_transform("odom_combined", "r_wrist_roll_link");
     print "Wrist", w
-    g = get_transform("odom_combined", "r_gripper_tool_frame");
+    g, _ = get_transform("odom_combined", "r_gripper_tool_frame");
     print "Gripper", g
-    n = get_extrapolated_location(g, w, -0.05)
+    n = get_extrapolated_location(g, w, -0.02)
     print "New position", n
+    input("Continue?")
     nx, ny, nz = n
     move_arm_ompl(nx, ny, nz, ox, oy, oz, ow, shoulder_tolerance=(0.001, 0.3))
-    move_arm_ompl(nx, ny, nz, -0.715, 0.001, 0.001, 0.699)
-    w = get_transform("odom_combined", "r_wrist_roll_link");
+
+    #pickup, make arm horizontal
+    ox, oy, oz, ow = -0.758, -0.011, 0.020, 0.652
+    move_arm_ompl(nx, ny, nz, ox, oy, oz, ow)
+
+    w, _ = get_transform("odom_combined", "r_wrist_roll_link");
     print "Wrist", w
-    move_arm_ompl(w[0] + 0.1, w[1], w[2] + 0.05, -0.715, 0.001, 0.001, 0.699)
+    # mover wrist to different position while keeping the spoon horizontal
+    move_arm_ompl(w[0] + 0.1, w[1], w[2] + 0.05, ox, oy, oz, ow)
+    
     """
     for step in np.arange(0.01, 0.05, 0.003):
         n = get_extrapolated_location(g, w, -step)
@@ -576,8 +587,22 @@ if __name__ == '__main__':
         print "Step", step
         nx, ny, nz = n
         move_arm_ompl(nx, ny, nz, ox, oy, oz, ow)
-    w = get_transform("odom_combined", "r_wrist_roll_link");
+    w, _ = get_transform("odom_combined", "r_wrist_roll_link");
     print "Wrist", w
     move_arm_ompl(w[0] + 0.1, w[1], w[2] + 0.05, ox, oy, oz, ow)
+    """
+
+    """
+    #Code below for re-running the orientation
+    while True:
+        move_arm_ompl(tx + dx, ty + dy, tz + dz, ox, oy, oz, ow)
+        cont = int(input("Continue (1/0) ?"))
+        if not cont == 0:
+            cont = int(input("New values (1/0) ?"))
+            if not cont == 0:
+                dx  = float(input("New value dx ?"))
+                dz  = float(input("New value dz ?"))
+        else:
+            break
     """
     
