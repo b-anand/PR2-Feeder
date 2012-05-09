@@ -1,25 +1,17 @@
-#include <string>
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/point_cloud_conversion.h>
-#include <pcl/features/vfh.h>
-#include "pcl/io/pcd_io.h" 
-//#include "pcl/visualization/cloud_viewer.h"
-#include <iostream>
-#include <boost/thread/thread.hpp>
-#include <pcl/point_cloud.h>
-#include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
-#include <pcl/search/search.h>
-#include <pcl/search/kdtree.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/features/fpfh.h>
-#include <pcl/filters/filter.h>
-#include <tf/transform_listener.h>
-#include <vector>
-#include "boost/filesystem/operations.hpp"
-#include "boost/filesystem/path.hpp"
+#include <pcl/point_cloud.h>
+#include <pcl/common/common.h>
+#include <pcl/common/transforms.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/console/parse.h>
+#include <pcl/console/print.h>
+#include <pcl/io/pcd_io.h>
+#include <iostream>
+#include <flann/flann.h>
+#include <flann/io/hdf5.h>
+#include <boost/filesystem.hpp>
+
+typedef std::pair<std::string, std::vector<float> > vfh_model;
 
 typedef pcl::PointCloud<pcl::PointXYZ> cloud_pos;
 typedef pcl::PointCloud<pcl::PointXYZRGB> cloud_prgb;
@@ -28,226 +20,265 @@ typedef pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_pos_ptr;
 typedef pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_prgb_ptr;
 typedef pcl::PointCloud<pcl::VFHSignature308>::Ptr cloud_vfh_ptr;
 
-namespace vfh_food_classifier
+namespace vfh_food_classifier {
+class VFHFoodClassifier {
+private:
+	int k = 6;
+	double thresh= DBL_MAX; // No threshold, disabled by default
+
+public:
+	VFHFoodClassifier(int argc,char **argv) 
+	{
+	      std::string extension (".pcd");
+	      transform (extension.begin (), extension.end (), extension.begin (), (int(*)(int))tolower);
+
+	      // Load the test histogram
+	      std::vector<int> pcd_indices = pcl::console::parse_file_extension_argument (argc, argv, ".pcd");
+	      vfh_model histogram;
+	      if (!loadHist (argv[pcd_indices.at (0)], histogram))
+	      {
+	        pcl::console::print_error ("Cannot load test file %s\n", argv[pcd_indices.at (0)]);
+	        return (-1);
+	      }	
+	}
+	~VFHFoodClassifier() {
+	}
+	cloud_pos_ptr getClosestMatch(cloud_prgb_ptr);
+
+	/** \brief Loads an n-D histogram file as a VFH signature
+	 * \param path the input file name
+	 * \param vfh the resultant VFH model
+	 */
+	bool loadHistFile(const boost::filesystem::path &path, vfh_model &vfh) {
+		int vfh_idx;
+		// Load the file as a PCD
+		try
+		{
+			sensor_msgs::PointCloud2 cloud;
+			int version;
+			Eigen::Vector4f origin;
+			Eigen::Quaternionf orientation;
+			pcl::PCDReader r;
+			int type; unsigned int idx;
+			r.readHeader (path.string (), cloud, origin, orientation, version, type, idx);
+
+			vfh_idx = pcl::getFieldIndex (cloud, "vfh");
+			if (vfh_idx == -1)
+			return (false);
+			if ((int)cloud.width * cloud.height != 1)
+			return (false);
+		}
+		catch (pcl::InvalidConversionException e)
+		{
+			return (false);
+		}
+
+		// Treat the VFH signature as a single Point Cloud
+		pcl::PointCloud <pcl::VFHSignature308> point;
+		pcl::io::loadPCDFile(path.string(), point);
+		vfh.second.resize(308);
+
+		std::vector <sensor_msgs::PointField> fields;
+		getFieldIndex(point, "vfh", fields);
+
+		for (size_t i = 0; i < fields[vfh_idx].count; ++i) {
+			vfh.second[i] = point.points[0].histogram[i];
+		}
+		vfh.first = path.string();
+		return (true);
+	}
+
+	/** \brief Search for the closest k neighbors
+	 * \param index the tree
+	 * \param model the query model
+	 * \param k the number of neighbors to search for
+	 * \param indices the resultant neighbor indices
+	 * \param distances the resultant neighbor distances
+	 */
+	inline void nearestKSearch(
+			flann::Index<flann::ChiSquareDistance<float> > &index,
+			const vfh_model &model, int k, flann::Matrix<int> &indices,
+			flann::Matrix<float> &distances) {
+		// Query point
+		flann::Matrix<float> p = flann::Matrix<float>(new float[model.second.size ()], 1, model.second.size ());
+		memcpy (&p.ptr ()[0], &model.second[0], p.cols * p.rows * sizeof (float));
+
+		indices = flann::Matrix<int>(new int[k], 1, k);
+		distances = flann::Matrix<float>(new float[k], 1, k);
+		index.knnSearch (p, indices, distances, k, flann::SearchParams (512));
+		delete[] p.ptr ();
+	}
+
+	/** \brief Load the list of file model names from an ASCII file
+	 * \param models the resultant list of model name
+	 * \param filename the input file name
+	 */
+	bool
+	loadFileList (std::vector<vfh_model> &models, const std::string &filename)
+	{
+		ifstream fs;
+		fs.open (filename.c_str ());
+		if (!fs.is_open () || fs.fail ())
+		return (false);
+
+		std::string line;
+		while (!fs.eof ())
+		{
+			getline (fs, line);
+			if (line.empty ())
+			continue;
+			vfh_model m;
+			m.first = line;
+			models.push_back (m);
+		}
+		fs.close ();
+		return (true);
+	}
+
+	void
+	nearestKNNMatch()
+	{
+		std::string kdtree_idx_file_name = "kdtree.idx";
+		std::string training_data_h5_file_name = "training_data.h5";
+		std::string training_data_list_file_name = "training_data.list";
+
+		std::vector<vfh_model> models;
+		flann::Matrix<int> k_indices;
+		flann::Matrix<float> k_distances;
+		flann::Matrix<float> data;
+		// Check if the data has already been saved to disk
+				if (!boost::filesystem::exists ("training_data.h5") || !boost::filesystem::exists ("training_data.list"))
+	      {
+	        pcl::console::print_error ("Could not find training data models files %s and %s!\n", 
+	            training_data_h5_file_name.c_str (), training_data_list_file_name.c_str ());
+	        return (-1);
+	      }
+	      else
+	      {
+	        loadFileList (models, training_data_list_file_name);
+	        flann::load_from_file (data, training_data_h5_file_name, "training_data");
+	        pcl::console::print_highlight ("Training data found. Loaded %d VFH models from %s/%s.\n", 
+	            (int)data.rows, training_data_h5_file_name.c_str (), training_data_list_file_name.c_str ());
+	      }
+
+	      // Check if the tree index has already been saved to disk
+	      if (!boost::filesystem::exists (kdtree_idx_file_name))
+	      {
+	        pcl::console::print_error ("Could not find kd-tree index in file %s!", kdtree_idx_file_name.c_str ());
+	        return (-1);
+	      }
+	      else
+	      {
+	        flann::Index<flann::ChiSquareDistance<float> > index (data, flann::SavedIndexParams ("kdtree.idx"));
+	        index.buildIndex ();
+	        nearestKSearch (index, histogram, k, k_indices, k_distances);
+	      }
+
+	      // Output the results on screen
+	      pcl::console::print_highlight ("The closest %d neighbors for %s are:\n", k, argv[pcd_indices[0]]);
+	      for (int i = 0; i < k; ++i)
+	        pcl::console::print_info ("    %d - %s (%d) with a distance of: %f\n", 
+	            i, models.at (k_indices[0][i]).first.c_str (), k_indices[0][i], k_distances[0][i]);
+
+	}
+
+
+	void 
+	display_results() 
+	{
+	      // Load the results
+	      pcl::visualization::PCLVisualizer p (argc, argv, "VFH Cluster Classifier");
+	      int y_s = (int)floor (sqrt ((double)k));
+	      int x_s = y_s + (int)ceil ((k / (double)y_s) - y_s);
+	      double x_step = (double)(1 / (double)x_s);
+	      double y_step = (double)(1 / (double)y_s);
+	      pcl::console::print_highlight ("Preparing to load "); 
+	      pcl::console::print_value ("%d", k); 
+	      pcl::console::print_info (" files ("); 
+	      pcl::console::print_value ("%d", x_s);    
+	      pcl::console::print_info ("x"); 
+	      pcl::console::print_value ("%d", y_s); 
+	      pcl::console::print_info (" / ");
+	      pcl::console::print_value ("%f", x_step); 
+	      pcl::console::print_info ("x"); 
+	      pcl::console::print_value ("%f", y_step); 
+	      pcl::console::print_info (")\n");
+
+	      int viewport = 0, l = 0, m = 0;
+	      for (int i = 0; i < k; ++i)
+	      {
+	        std::string cloud_name = models.at (k_indices[0][i]).first;
+	        boost::replace_last (cloud_name, "_vfh", "");
+
+	        p.createViewPort (l * x_step, m * y_step, (l + 1) * x_step, (m + 1) * y_step, viewport);
+	        l++;
+	        if (l >= x_s)
+	        {
+	          l = 0;
+	          m++;
+	        }
+
+	        sensor_msgs::PointCloud2 cloud;
+	        pcl::console::print_highlight (stderr, "Loading "); pcl::console::print_value (stderr, "%s ", cloud_name.c_str ());
+	        if (pcl::io::loadPCDFile (cloud_name, cloud) == -1)
+	          break;
+
+	        // Convert from blob to PointCloud
+	        pcl::PointCloud<pcl::PointXYZ> cloud_xyz;
+	        pcl::fromROSMsg (cloud, cloud_xyz);
+
+	        if (cloud_xyz.points.size () == 0)
+	          break;
+
+	        pcl::console::print_info ("[done, "); 
+	        pcl::console::print_value ("%d", (int)cloud_xyz.points.size ()); 
+	        pcl::console::print_info (" points]\n");
+	        pcl::console::print_info ("Available dimensions: "); 
+	        pcl::console::print_value ("%s\n", pcl::getFieldsList (cloud).c_str ());
+
+	        // Demean the cloud
+	        Eigen::Vector4f centroid;
+	        pcl::compute3DCentroid (cloud_xyz, centroid);
+	        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz_demean (new pcl::PointCloud<pcl::PointXYZ>);
+	        pcl::demeanPointCloud<pcl::PointXYZ> (cloud_xyz, centroid, *cloud_xyz_demean);
+	        // Add to renderer*
+	        p.addPointCloud (cloud_xyz_demean, cloud_name, viewport);
+	        
+	        // Check if the model found is within our inlier tolerance
+	        std::stringstream ss;
+	        ss << k_distances[0][i];
+	        if (k_distances[0][i] > thresh)
+	        {
+	          p.addText (ss.str (), 20, 30, 1, 0, 0, ss.str (), viewport);  // display the text with red
+
+	          // Create a red line
+	          pcl::PointXYZ min_p, max_p;
+	          pcl::getMinMax3D (*cloud_xyz_demean, min_p, max_p);
+	          std::stringstream line_name;
+	          line_name << "line_" << i;
+	          p.addLine (min_p, max_p, 1, 0, 0, line_name.str (), viewport);
+	          p.setShapeRenderingProperties (pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 5, line_name.str (), viewport);
+	        }
+	        else
+	          p.addText (ss.str (), 20, 30, 0, 1, 0, ss.str (), viewport);
+
+	        // Increase the font size for the score*
+	        p.setShapeRenderingProperties (pcl::visualization::PCL_VISUALIZER_FONT_SIZE, 18, ss.str (), viewport);
+
+	        // Add the cluster name
+	        p.addText (cloud_name, 20, 10, cloud_name, viewport);
+	      }
+	      // Add coordianate systems to all viewports
+	      p.addCoordinateSystem (0.1, 0);
+	}
+};
+
+int
+main (int argc, char** argv)
 {
-    class VFHFoodClassifier
-    {
-    private:
-
-
-    public:
-        VFHFoodClassifier();
-        ~VFHFoodClassifier ()
-    {
-    }
-        cloud_pos_ptr getClosestMatch(cloud_prgb_ptr);
-    };
-
-    
-    bool
-      loadFileList (std::vector<vfh_model> &models, const std::string &filename)
-    {
-      std::ifstream fs;
-      fs.open (filename.c_str ());
-      if (!fs.is_open () || fs.fail ())
-        return (false);
-
-      std::string line;
-      while (!fs.eof ())
-      {
-        getline (fs, line);
-        if (line.empty ())
-          continue;
-        vfh_model m;
-        m.first = line;
-        models.push_back (m);
-      }
-      fs.close ();
-      return (true);
-    }
-
-
-
-    double computeThreshold (const flann::Matrix<float> &data, int k, double sigma)
-    {
-      std::vector<float> distances (k);
-      for (int i = 0; i < k; ++i)
-        distances[i] = data[0][i];
-
-      double mean, stddev;
-      pcl::getMeanStd (distances, mean, stddev);
-
-      // Outlier rejection
-      std::vector<float> inliers;
-      for (int i = 0; i < k; ++i)
-        if ((distances[i] <= (mean + sigma * stddev)) && (distances[i] >= (mean - sigma * stddev)))
-          inliers.push_back (distances[i]);
-
-      pcl::getMeanStd (inliers, mean, stddev);
-
-      return (mean);
-    }
-
-    VFHClassifier::VFHClassifier(const std::string& dataset_location) :
-    		dataset_location_(dataset_location)
-    {
-    	bf::path dpath = dataset_location;
-    	bf::path training_data_h5_file_name = dpath / "training_data.h5";
-    	bf::path training_data_list_file_name = dpath/"training_data.list";
-    	bf::path index_filename = dpath/"kdtree.idx";
-
-    	// Check if the data has already been saved to disk
-    	if (!boost::filesystem::exists (training_data_h5_file_name) ||
-    			!boost::filesystem::exists (training_data_list_file_name) ||
-    			!boost::filesystem::exists (index_filename) )
-    	{
-    		print_error ("Could not find training data models files %s, %s or %s!\n",
-    				training_data_h5_file_name.string().c_str (), training_data_list_file_name.string().c_str (),
-    				index_filename.string().c_str());
-    	}
-    	else
-    	{
-    		loadFileList (models_, training_data_list_file_name.string());
-    		flann::load_from_file (data_, training_data_h5_file_name.string(), "training_data");
-    		print_highlight ("Training data found. Loaded %d VFH models from %s/%s.\n", (int)data_.rows,
-    				training_data_h5_file_name.string().c_str (), training_data_list_file_name.string().c_str ());
-
-    		//flann_set_distance_type ((flann_distance_t)7, 0);
-    		index_ =new flann::Index<flann::ChiSquareDistance<float> >( data_,flann::SavedIndexParams (index_filename.string().c_str()));
-    		index_->buildIndex ();
-    	}
-
-    	knn_ = 1;
-    }
-
-    bool VFHClassifier::detection_valid(const Detection& detection)
-    {
-    	const int THRESH = 25;
-
-        typedef pcl::VFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::VFHSignature308> VFHEstimatio;
-        typedef pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> NormalEstimation;
-        typedef pcl::EuclideanClusterExtraction<pcl::PointXYZ> EuclideanClusterExtraction;
-
-        NormalEstimation n3d;
-        VFHEstimatio vfh;
-        EuclideanClusterExtraction clusterer;
-
-        typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
-        typedef pcl::PointCloud<pcl::Normal> PointCloudNormal;
-
-    	PointCloud cloud;
-    	PointCloud::Ptr object_cloud = boost::make_shared<PointCloud>();
-    	PointCloudNormal::Ptr normals = boost::make_shared<PointCloudNormal>();
-        pcl::PointCloud<pcl::VFHSignature308> vfh_signature;
-
-    	pcl::fromROSMsg(*point_cloud_, cloud);
-        printf("Cloud size: %d\n", (int)cloud.points.size());
-        printf("Indices size: %d\n", (int)detection.mask.indices.indices.size());
-        copyPointCloud (cloud, detection.mask.indices, *object_cloud);
-
-        clusterer.setClusterTolerance (0.01);
-        clusterer.setMinClusterSize (300);
-        clusterer.setInputCloud(object_cloud);
-        std::vector<pcl::PointIndices> clusters;
-        clusterer.extract(clusters);
-        if (clusters.size()==0) return false;
-
-    	PointCloud::Ptr object_cloud2 = boost::make_shared<PointCloud>();
-    	copyPointCloud (*object_cloud, clusters[0], *object_cloud2);
-
-    	n3d.setKSearch (10);                  // 10 k-neighbors by default
-    	pcl::KdTree<pcl::PointXYZ>::Ptr normals_tree = boost::make_shared<pcl::KdTreeFLANN<pcl::PointXYZ> > ();
-    	n3d.setSearchMethod (normals_tree);
-
-        // estimate normals
-        n3d.setInputCloud(object_cloud2);
-        n3d.compute(*normals);
-
-    	pcl::KdTree<pcl::PointXYZ>::Ptr vfh_tree = boost::make_shared<pcl::KdTreeFLANN<pcl::PointXYZ> > ();
-        vfh.setSearchMethod (vfh_tree);
-        vfh.setInputCloud(object_cloud2);
-        vfh.setInputNormals(normals);
-        vfh.compute(vfh_signature);
-
-        std::string stamp =  boost::lexical_cast<std::string> (point_cloud_->header.stamp.toSec ()) + ".pcd";
-
-    //    pcl::io::savePCDFile("cloud_"+stamp, *object_cloud, true);
-    //    pcl::io::savePCDFile("vfh_"+stamp, vfh_signature, false);
-
-        assert(vfh_signature.points.size()==1);
-        float* hist = vfh_signature.points[0].histogram;
-
-        // KNN search
-        flann::Matrix<float> p = flann::Matrix<float>(hist, 1, 308);
-        flann::Matrix<int> indices = flann::Matrix<int>(new int[knn_], 1, knn_);
-        flann::Matrix<float> distances = flann::Matrix<float>(new float[knn_], 1, knn_);
-        index_->knnSearch (p, indices, distances, knn_, flann::SearchParams (512));
-
-        for (size_t i=0;i<indices.cols;++i) {
-            print_info ("    %d - %s (%d) with a distance of: %f\n", i, models_.at (indices[0][i]).first.c_str (), indices[0][i], distances[0][i]);
-        }
-
-        std::string vfh_model =  models_[indices[0][0]].first.c_str();
-        size_t pos1 = vfh_model.find('/');
-        size_t pos2 = vfh_model.find('/',pos1+1);
-        std::string vfh_label = vfh_model.substr(pos1+1,pos2-pos1-1);
-        while (vfh_label.find(".bag")!=std::string::npos) {
-        	vfh_label = vfh_label.substr(0, vfh_label.size()-4);
-        }
-        printf("VFH label: %s\n", vfh_label.c_str());
-        printf("BiGG label: %s\n", detection.label.c_str());
-
-        if (distances[0][0]<THRESH && vfh_label==detection.label) {
-        	return true;
-        }
-        else {
-        	return false;
-        }
-    }
-
-    void VFHClassifier::detect()
-    {
-    	detections_.detections.clear();
-    	for (size_t i=0;i<input_detections_->detections.size();++i) {
-    		const Detection &d = input_detections_->detections[i];
-    		if (detection_valid(d)) {
-    			detections_.detections.push_back(d);
-    		}
-    	}
-    }
-
-
-//cloud_pos_ptr VFHFoodClassifier::getClosestMatch(cloud_prgb_ptr in_cloud_ptr) {
-//    cloud_prgb_ptr cloud (new cloud_prgb);
-//    cloud = in_cloud_ptr;
-//    // Remove nans
-//    std::vector<int> indices;
-//    pcl::removeNaNFromPointCloud(*cloud,*cloud,indices);
-//    // Create the normal estimation class, and pass the input dataset to it
-//    pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> ne;
-//    ne.setInputCloud (cloud);
-//
-//    // Create an empty kdtree representation, and pass it to the normal estimation object.
-//    // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
-//    pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGB> ());
-//    ne.setSearchMethod (tree);
-//
-//    // Output datasets
-//    pcl::PointCloud<pcl::Normal>::Ptr normals (new pcl::PointCloud<pcl::Normal>);
-//
-//    ne.setRadiusSearch (0.03);      //cms
-//    ne.compute (*normals);
-//    pcl::VFHEstimation<pcl::PointXYZRGB, pcl::Normal, pcl::VFHSignature308> vfh;
-//    vfh.setInputCloud (cloud);
-//    vfh.setInputNormals (normals);
-//    // Create an empty kdtree representation, and pass it to the FPFH estimation object.
-//    // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
-//    vfh.setSearchMethod (tree);
-//    // Output datasets
-//    cloud_vfh_ptr vfhs (new cloud_vfh ());
-//
-//    // Compute the features
-//    vfh.compute (*vfhs);
-//     
-//    }
+	VFHFoodClassifier* vfh = new VFHFoodClassifier(argc,argv);
+	vfh->nearest_search();
+	vfh->display_results();
+	p.spin ();
+	return (0);
 }
