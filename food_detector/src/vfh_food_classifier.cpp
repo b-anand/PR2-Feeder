@@ -1,7 +1,7 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/common/common.h>
-//#include <pcl/common/transforms.h>
+#include <pcl/common/centroid.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/console/parse.h>
 #include <pcl/console/print.h>
@@ -23,84 +23,79 @@ typedef pcl::PointCloud<pcl::VFHSignature308>::Ptr cloud_vfh_ptr;
 namespace vfh_food_classifier {
 	class VFHFoodClassifier {
 	private:
-		static int k = 6;
-		static double thresh= DBL_MAX; // No threshold, disabled by default
+		int k;
+		double thresh; // No threshold, disabled by default
 		vfh_model histogram;
 		std::vector<vfh_model> models;
 		flann::Matrix<int> k_indices;
 		flann::Matrix<float> k_distances;
 		flann::Matrix<float> data;
 		std::vector<int> pcd_indices;
+		std::string test_file;
 	public:
 		bool loadHistFile(const boost::filesystem::path &path, vfh_model &vfh);
-		VFHFoodClassifier()
-		{
+		VFHFoodClassifier() {
+			k = 6;
+			thresh = DBL_MAX;
 		}
 		~VFHFoodClassifier() {
 		}
-		cloud_pos_ptr getClosestMatch(cloud_prgb_ptr);
 
-		
-		
-		
 		/** \brief Loads an n-D histogram file as a VFH signature
-		  * \param path the input file name
-		  * \param vfh the resultant VFH model
-		  */
-		bool
-		loadHist (const boost::filesystem::path &path, vfh_model &vfh)
-		{
-		  int vfh_idx;
-		  // Load the file as a PCD
-		  try
-		  {
-		    sensor_msgs::PointCloud2 cloud;
-		    int version;
-		    Eigen::Vector4f origin;
-		    Eigen::Quaternionf orientation;
-		    pcl::PCDReader r;
-		    int type; int idx;
-		    r.readHeader (path.string (), cloud, origin, orientation, version, type, idx);
+		 * \param path the input file name
+		 * \param vfh the resultant VFH model
+		 */
+		bool loadHist(const boost::filesystem::path &path, vfh_model &vfh) {
+			int vfh_idx;
+			// Load the file as a PCD
+			try
+			{
+				sensor_msgs::PointCloud2 cloud;
+				int version;
+				Eigen::Vector4f origin;
+				Eigen::Quaternionf orientation;
+				pcl::PCDReader r;
+				int type;unsigned int idx;
+				r.readHeader (path.string (), cloud, origin, orientation, version, type, idx);
 
-		    vfh_idx = pcl::getFieldIndex (cloud, "vfh");
-		    if (vfh_idx == -1)
-		      return (false);
-		    if ((int)cloud.width * cloud.height != 1)
-		      return (false);
-		  }
-		  catch (pcl::InvalidConversionException e)
-		  {
-		    return (false);
-		  }
+				vfh_idx = pcl::getFieldIndex (cloud, "vfh");
+				if (vfh_idx == -1)
+				return (false);
+				if ((int)cloud.width * cloud.height != 1)
+				return (false);
+			}
+			catch (pcl::InvalidConversionException e)
+			{
+				return (false);
+			}
 
-		  // Treat the VFH signature as a single Point Cloud
-		  pcl::PointCloud <pcl::VFHSignature308> point;
-		  pcl::io::loadPCDFile (path.string (), point);
-		  vfh.second.resize (308);
+			// Treat the VFH signature as a single Point Cloud
+			pcl::PointCloud <pcl::VFHSignature308> point;
+			pcl::io::loadPCDFile(path.string(), point);
+			vfh.second.resize(308);
 
-		  std::vector <sensor_msgs::PointField> fields;
-		  getFieldIndex (point, "vfh", fields);
+			std::vector <sensor_msgs::PointField> fields;
+			getFieldIndex(point, "vfh", fields);
 
-		  for (size_t i = 0; i < fields[vfh_idx].count; ++i)
-		  {
-		    vfh.second[i] = point.points[0].histogram[i];
-		  }
-		  vfh.first = path.string ();
-		  return (true);
+			for (size_t i = 0; i < fields[vfh_idx].count; ++i) {
+				vfh.second[i] = point.points[0].histogram[i];
+			}
+			vfh.first = path.string();
+			test_file = path.string();
+			return (true);
 		}
-		
-		
+
 		bool loadHistFile(int argc, char **argv) {
 			// Load the file as a PCD
-			const boost::filesystem::path &path, vfh_model &vfh
-//			std::string extension (".pcd");
-//			transform (extension.begin (), extension.end (), extension.begin (), (int(*)(int))tolower);
+			//			std::string extension (".pcd");
+			//			transform (extension.begin (), extension.end (), extension.begin (), (int(*)(int))tolower);
 
 			// Load the test histogram
-			pcd_indices = pcl::console::parse_file_extension_argument (argc, argv, ".pcd");
-			if (!loadHist (argv[pcd_indices.at (0)], histogram))
-			{
-				pcl::console::print_error ("Cannot load test file %s\n", argv[pcd_indices.at (0)]);
+			pcd_indices = pcl::console::parse_file_extension_argument(argc, argv,
+					".pcd");
+			if (!loadHist(argv[pcd_indices.at (0)], histogram)) {
+				pcl::console::print_error("Cannot load test file %s\n",
+						argv[pcd_indices.at (0)]);
 				return (-1);
 			}
 			return (true);
@@ -189,7 +184,7 @@ namespace vfh_food_classifier {
 			}
 
 			// Output the results on screen
-			pcl::console::print_highlight ("The closest %d neighbors for %s are:\n", k, argv[pcd_indices[0]]);
+			pcl::console::print_highlight ("The closest %d neighbors for %s are:\n", k, test_file.c_str());
 			for (int i = 0; i < k; ++i)
 			pcl::console::print_info ("    %d - %s (%d) with a distance of: %f\n",
 					i, models.at (k_indices[0][i]).first.c_str (), k_indices[0][i], k_distances[0][i]);
@@ -201,7 +196,8 @@ namespace vfh_food_classifier {
 		display_results()
 		{
 			// Load the results
-			pcl::visualization::PCLVisualizer p (argc, argv, "VFH Cluster Classifier");
+			//pcl::visualization::PCLVisualizer p (argc, argv, "VFH Cluster Classifier");
+			pcl::visualization::PCLVisualizer p ("VFH Cluster Classifier");
 			int y_s = (int)floor (sqrt ((double)k));
 			int x_s = y_s + (int)ceil ((k / (double)y_s) - y_s);
 			double x_step = (double)(1 / (double)x_s);
@@ -252,9 +248,9 @@ namespace vfh_food_classifier {
 
 				// Demean the cloud
 				Eigen::Vector4f centroid;
-				pcl::compute3DCentroid (cloud_xyz, centroid);
+				pcl::compute3DCentroid(cloud_xyz, centroid);
 				pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz_demean (new pcl::PointCloud<pcl::PointXYZ>);
-				pcl::demeanPointCloud<pcl::PointXYZ> (cloud_xyz, centroid, *cloud_xyz_demean);
+				pcl::demeanPointCloud(cloud_xyz, centroid, *cloud_xyz_demean);
 				// Add to renderer*
 				p.addPointCloud (cloud_xyz_demean, cloud_name, viewport);
 
@@ -284,16 +280,15 @@ namespace vfh_food_classifier {
 			}
 			// Add coordianate systems to all viewports
 			p.addCoordinateSystem (0.1, 0);
+			p.spin();
 		}
 	};
 
-	int
-	main (int argc, char** argv)
-	{
+	int main(int argc, char** argv) {
 		VFHFoodClassifier* vfh = new VFHFoodClassifier();
-		vfh->loadHistFile(argc,argv);
-		vfh->nearest_search();
+		vfh->loadHistFile(argc, argv);
+		vfh->nearestKNNMatch();
 		vfh->display_results();
-		p.spin ();
 		return (0);
 	}
+}

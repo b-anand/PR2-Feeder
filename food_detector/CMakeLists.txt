@@ -14,7 +14,7 @@ project(food_detector)
 
 rosbuild_init()
 #set(PCL_DIR "/opt/ros/electric/stacks/perception_pcl/pcl/share/pcl-1.1/")
-find_package(PCL 1.2 REQUIRED)
+#find_package(PCL 1.2 REQUIRED)
 #find_package(FLANN 1.7.1 REQUIRED)
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
