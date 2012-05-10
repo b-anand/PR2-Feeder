@@ -7,7 +7,9 @@
   <include file="$(find pr2_feeder)/launch/rxconsole.launch"/>
 
   <!-- Start the manipulation pipeline. The database parameters need to be set inside the launch file. -->
+<!--
   <include file="$(find pr2_feeder)/launch/pr2_tabletop_manipulation_pipeline.launch"/>
+-->
 </launch>
 
 
