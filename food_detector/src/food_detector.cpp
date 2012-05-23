@@ -42,7 +42,7 @@ FoodDetector::FoodDetector(): nh_(""),priv_nh_("~")
      if (!nh_.ok()) exit(0);
      seg_srv_ = nh_.serviceClient<TabletopSegmentation>(service_name, true);
 
-     priv_nh_.param<std::string>("recognition_srv", service_name, "/tabletop_object_recognition");
+     priv_nh_.param<std::string>("detection_srv", service_name, "/object_detector");
      while ( !ros::service::waitForService(service_name, ros::Duration(2.0)) && nh_.ok() ) 
      {
        ROS_INFO("Waiting for %s service to come up", service_name.c_str());
@@ -59,11 +59,7 @@ FoodDetector::FoodDetector(): nh_(""),priv_nh_("~")
      startMainLoop();
     
 }
-
-//bool FoodDetector::serviceCallback(TabletopDetection::Request &request, TabletopDetection::Response &response)
-bool FoodDetector::startMainLoop()
-{
-//	ROS_INFO("Incoming service call");
+bool cluster_segmenter() {
     tabletop_object_detector::TabletopSegmentation segmentation_srv;
     if (!seg_srv_.call(segmentation_srv))
     {
@@ -92,16 +88,41 @@ bool FoodDetector::startMainLoop()
         sensor_msgs::convertPointCloudToPointCloud2(segmentation_srv.response.clusters[i], *pc2);
         ROS_INFO("  Converted point cloud has data size %d", (int)pc2->data.size());
         
-        
-        
 //		Call VFH recognizer
 //      ROS_INFO("  Recognition complete. Found %d models", (int)scaled_model_ids.size());        
         ROS_INFO("  Model %d complete", (int)i);
     }
+
+}
+
+bool object_recognizer() {
+    response.detection.table = segmentation_srv.response.table;
+    response.detection.clusters = segmentation_srv.response.clusters;
+    if (segmentation_srv.response.clusters.empty() || !request.return_models) return true;
+
+    tabletop_object_detector::TabletopObjectRecognition recognition_srv;
+    recognition_srv.request.table = segmentation_srv.response.table;
+    recognition_srv.request.clusters = segmentation_srv.response.clusters;
+    recognition_srv.request.num_models = request.num_models;
+    recognition_srv.request.perform_fit_merge = perform_fit_merge_;
+    if (!rec_srv_.call(recognition_srv))
+    {
+        ROS_ERROR("Call to recognition service failed");
+        response.detection.result = response.detection.OTHER_ERROR;
+        return true;
+    }
+    response.detection.models = recognition_srv.response.models;
+    response.detection.cluster_model_indices = recognition_srv.response.cluster_model_indices;
+    return true;
+}
+//bool FoodDetector::serviceCallback(TabletopDetection::Request &request, TabletopDetection::Response &response)
+bool FoodDetector::startMainLoop()
+{
+    //cluster_segmenter();
+    object_recognizer();
     return true;
 } 
 
-}
 
 int main(int argc, char **argv)
 {
